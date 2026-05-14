@@ -1,0 +1,31 @@
+{
+    "name": "aryoff/clinical-documentation-module",
+    "description": "",
+    "authors": [
+        {
+            "name": "Aryo Fajar",
+            "email": "aryoff@gmail.com"
+        }
+    ],
+    "type": "laravel-module",
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\ClinicalDocumentation\\": "app/",
+            "Modules\\ClinicalDocumentation\\Database\\Factories\\": "database/factories/",
+            "Modules\\ClinicalDocumentation\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\ClinicalDocumentation\\Tests\\": "tests/"
+        }
+    }
+}

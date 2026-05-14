@@ -1,0 +1,36 @@
+{
+    "name": "ClinicalDocumentation",
+    "alias": "clinicaldocumentation",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ClinicalDocumentation\\Providers\\ClinicalDocumentationServiceProvider"
+    ],
+    "files": [],
+    "permissions": [],
+    "dictionary": [],
+    "require": ["HospitalCore", "MedicalRecords"],
+    "menuStructure": [
+        {
+            "title": "ClinicalDocumentation",
+            "name": "clinicaldocumentation",
+            "parent": true,
+            "icon": "IconViewModule",
+            "child": [
+                {
+                    "title": "Index",
+                    "name": "clinicaldocumentation.index",
+                    "routeName": "clinicaldocumentation.index",
+                    "icon": "dot"
+                },{
+                    "title": "Create",
+                    "name": "clinicaldocumentation.create",
+                    "routeName": "clinicaldocumentation.create",
+                    "icon": "dot"
+                }
+            ]
+        }
+
+    ]
+}
