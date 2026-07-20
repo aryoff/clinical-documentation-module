@@ -27,12 +27,12 @@ interface Registration {
         gender: string;
         dob: string;
     };
-    doctor: {
+    doctor?: {
         name: string;
-    };
-    department: {
+    } | null;
+    department?: {
         name: string;
-    };
+    } | null;
 }
 
 interface Props {
@@ -172,11 +172,11 @@ export default function Index({ registrations }: Props) {
                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
                                             <div className="flex items-center gap-1">
                                                 <Stethoscope className="w-4 h-4 text-primary/70" />
-                                                <span>Doctor: <strong className="text-foreground font-semibold">{reg.doctor.name}</strong></span>
+                                                <span>Doctor: <strong className="text-foreground font-semibold">{reg.doctor?.name ?? 'Unassigned'}</strong></span>
                                             </div>
                                             <span className="hidden md:inline">•</span>
                                             <div>
-                                                <span>Dept: <strong className="text-foreground font-semibold">{reg.department.name}</strong></span>
+                                                <span>Dept: <strong className="text-foreground font-semibold">{reg.department?.name ?? 'N/A'}</strong></span>
                                             </div>
                                         </div>
                                     </div>

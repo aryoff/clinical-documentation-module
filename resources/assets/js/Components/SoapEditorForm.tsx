@@ -49,8 +49,8 @@ interface Registration {
         gender: string;
         dob: string;
     };
-    doctor: { name: string };
-    department: { name: string };
+    doctor?: { name: string } | null;
+    department?: { name: string } | null;
 }
 
 interface PatientDocument {
@@ -336,7 +336,7 @@ export default function SoapEditorForm({ registration, patientDocuments, note }:
                         <div className="w-px h-6 bg-border"></div>
                         <div>
                             <span className="text-muted-foreground uppercase text-[10px] block font-bold">Class</span>
-                            <span className="text-foreground font-bold mt-0.5">{registration.department.name}</span>
+                            <span className="text-foreground font-bold mt-0.5">{registration.department?.name ?? 'N/A'}</span>
                         </div>
                     </div>
                 </div>

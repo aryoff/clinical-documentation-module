@@ -27,8 +27,8 @@ interface Registration {
         gender: string;
         dob: string;
     };
-    doctor: { name: string };
-    department: { name: string };
+    doctor?: { name: string } | null;
+    department?: { name: string } | null;
 }
 
 interface SoapNote {
@@ -158,7 +158,7 @@ export default function Show({ note, chain }: Props) {
 
                         <div className="text-left md:text-right text-xs text-muted-foreground space-y-1">
                             <p>Physician: <strong className="text-foreground font-bold">{note.author.name}</strong></p>
-                            <p>Class / Poly: <strong className="text-foreground font-bold">{registration.department.name}</strong></p>
+                            <p>Class / Poly: <strong className="text-foreground font-bold">{registration.department?.name ?? 'N/A'}</strong></p>
                             <p>Encounter: <strong className="text-foreground font-bold">{registration.registration_number}</strong></p>
                         </div>
                     </div>

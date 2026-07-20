@@ -46,10 +46,21 @@ class ClinicalDocumentationController extends Controller
     /**
      * Show the form for creating a new SOAP note.
      */
-    public function create(Request $request): Response
+    public function create(Request $request): Response|RedirectResponse
     {
         $registrationId = $request->query('registration_id');
-        $registration = Registration::with(['patient', 'doctor', 'department'])->findOrFail($registrationId);
+
+        if (!$registrationId) {
+            return redirect()->route('clinicaldocumentation.index')
+                ->with('error', 'Please select a patient registration first from the EMR Dashboard.');
+        }
+
+        $registration = Registration::with(['patient', 'doctor', 'department'])->find($registrationId);
+
+        if (!$registration) {
+            return redirect()->route('clinicaldocumentation.index')
+                ->with('error', 'The selected registration was not found. Please choose a valid registration.');
+        }
 
         // Fetch scanned diagnostic/lab/rad documents for this active registration
         $patientDocuments = PatientDocument::where('registration_id', $registrationId)->get();
