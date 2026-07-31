@@ -214,6 +214,18 @@ Valid `hc_registrations.type` values for SOAP notes: `'er'`, `'inpatient'`, `'ou
 
 Follow test patterns from `Modules/Knowledgebase/tests/`. Use `RefreshDatabase`, model factories, `actingAs()`.
 
+## Legacy Parity Audit Update (2026-07-31)
+
+### Direct Legacy Source Evidence
+
+`Legacy SIMRS/REKAM MEDIS/FormNew/FormRekamMedis.frm` contains patient diagnosis and scanned-record tabs. It is evidence of record custody, not a SOAP screen-for-screen specification.
+
+This PRD was cross-checked against the [Legacy SIMRS Parity Audit](../../../docs/PRD_LEGACY_SIMRS_PARITY_AUDIT.md) and the agreed Hospital Workflow boundary in ADR 0011. `REKAM MEDIS` establishes the clinical-record intent. SOAP persistence and submit/amend routes exist; retain explicit acceptance for finalized-note amendment, audit history, and MedicalRecords retention so a draft note is never mistaken for a completed record workflow.
+
+### Wave 3 Clinical-Record Acceptance Gate (2026-07-31)
+
+SOAP notes are created as author-owned drafts, cannot be edited after submission, and are finalized only with non-empty clinical content. Amendments create a single linked draft and supersede the prior finalized note on submission; multi-branching is rejected. Finalization records diagnoses and emits the HospitalCore patient-timeline event consumed by MedicalRecords, while read access creates a MedicalRecords access-log event.
+
 ## Out of Scope
 
 - **Nursing care plans / care pathways** — Structured nursing care plans (NCP) with goal, intervention, and evaluation columns. Deferred.
