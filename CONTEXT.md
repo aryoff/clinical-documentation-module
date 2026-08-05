@@ -46,3 +46,14 @@ The patient-specific record of a single-use treatment supply that requests a cor
 **Clinical Consumable Order**:
 The clinical instruction for a treatment consumable that has no stock or billing effect until actual authorized use is recorded.
 
+**Clinical Document Template**:
+The versioned definition of a clinical document type, its fields, eligible author professions, signing and co-signature policy, and applicable care settings. SOAP is an initial template, and a signed document stays bound to the version it was signed against.
+
+**Clinical Rationale Reference**:
+An optional public reference between a signed Clinical Document and an EPrescription-owned prescription. It preserves the clinical basis when both modules are installed; neither requires the other.
+
+**Clinical Evidence Reference**:
+An optional public reference from a Billable Service Fact, prescription, or ancillary request to its supporting signed Clinical Document. It proves rationale without making this context the source of that financial, prescription, order, or result fact.
+
+**Local Clinical Retention**:
+The sealed, access-controlled retention of finalized Clinical Documents and their addendum chains when MedicalRecords is not installed, providing required custody without an external archive provider.
