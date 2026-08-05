@@ -10,7 +10,7 @@
     "files": [],
     "permissions": [],
     "dictionary": [],
-    "require": ["HospitalCore", "MedicalRecords"],
+    "require": ["HospitalCore"],
     "menuStructure": [
         {
             "title": "ClinicalDocumentation",
