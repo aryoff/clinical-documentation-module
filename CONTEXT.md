@@ -13,6 +13,9 @@ The authorized working view of signed clinical documents and facts for an active
 **Clinical Addendum**:
 An auditable linked correction or clarification of a signed Clinical Document that preserves the original.
 
+**Clinical Fact**:
+An immutable contract-defined statement published after a care context finalizes its own record, allowing derived records and projections without transferring source ownership. This is the generic shape; a publishing context defines its own named variant, such as a Laboratory Result Clinical Projection or a Prescription Clinical Fact, and remains the authority for the record behind it.
+
 **Diagnosis Assertion**:
 A clinically authored, accountable statement of diagnosis linked to supporting clinical evidence.
 
@@ -57,3 +60,13 @@ An optional public reference from a Billable Service Fact, prescription, or anci
 
 **Local Clinical Retention**:
 The sealed, access-controlled retention of finalized Clinical Documents and their addendum chains when MedicalRecords is not installed, providing required custody without an external archive provider.
+
+## Relationships
+
+**OperatingRoom, Obstetrics, Radiology, Laboratory, and PhysicalTherapy** — each owns its own execution, birth, imaging, specimen, or session evidence and publishes immutable projections here. Authoring in this context requires that source's explicit clinical handoff; a projection never transfers ownership of the source record.
+
+**MedicalRecords** — the optional ciphertext vault. This context alone holds the keys, encrypts every Clinical Payload before it leaves the application, keeps the archive manifest, and authorizes each bounded one-patient release. Vault absence means sealed Local Clinical Retention, never a blocked discharge.
+
+**EPrescription** — independently installable. A Clinical Rationale Reference may link a prescription to signed reasoning, but urgent prescribing works with no clinical document and this context works with no prescriber.
+
+**Warehouse** — a guarded provider holding batch custody behind Clinical Consumable Usage. This context owns why a supply was used; Warehouse owns the stock truth, joined by one consumable audit correlation.
