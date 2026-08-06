@@ -4,6 +4,8 @@ namespace Modules\ClinicalDocumentation\Providers;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
+use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
+use Modules\ClinicalDocumentation\Services\ActiveClinicalRecordService;
 
 class ClinicalDocumentationServiceProvider extends ServiceProvider
 {
@@ -31,6 +33,7 @@ class ClinicalDocumentationServiceProvider extends ServiceProvider
     {
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
+        $this->app->singleton(ActiveClinicalRecordContract::class, ActiveClinicalRecordService::class);
     }
 
     /**

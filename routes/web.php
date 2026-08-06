@@ -17,19 +17,19 @@ use Modules\ClinicalDocumentation\Http\Controllers\ClinicalDocumentationControll
 */
 
 Route::middleware(['web', 'auth'])->group(function () {
-    // Search ICD Codes API
-    Route::get('/clinical-documentation/api/icd', [ClinicalDocumentationController::class, 'searchIcd'])
-        ->name('clinicaldocumentation.api.icd');
-
-    // Submit and finalize SOAP note
+    // Sign an immutable Clinical Document.
     Route::post('/clinical-documentation/{id}/submit', [ClinicalDocumentationController::class, 'submit'])
+        ->middleware('permission:clinicaldocumentation.documents.sign')
         ->name('clinicaldocumentation.submit');
 
-    // Amend a finalized note
+    // Create and sign a reasoned addendum without changing the source document.
     Route::post('/clinical-documentation/{id}/amend', [ClinicalDocumentationController::class, 'amend'])
+        ->middleware('permission:clinicaldocumentation.documents.amend')
         ->name('clinicaldocumentation.amend');
 
-    // Standard SOAP Note resource routes
+    // Standard Clinical Document routes.
     Route::resource('clinicaldocumentation', ClinicalDocumentationController::class)
+        ->middlewareFor(['index', 'show'], 'permission:clinicaldocumentation.records.read')
+        ->middlewareFor(['create', 'store', 'edit', 'update'], 'permission:clinicaldocumentation.documents.author')
         ->names('clinicaldocumentation');
 });

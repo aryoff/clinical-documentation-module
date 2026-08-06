@@ -15,5 +15,8 @@ use Modules\ClinicalDocumentation\Http\Controllers\ClinicalDocumentationControll
 */
 
 Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
-    Route::apiResource('clinicaldocumentation', ClinicalDocumentationController::class)->names('clinicaldocumentation');
+    Route::apiResource('clinicaldocumentation', ClinicalDocumentationController::class)
+        ->middlewareFor(['index', 'show'], 'permission:clinicaldocumentation.records.read')
+        ->middlewareFor(['store', 'update'], 'permission:clinicaldocumentation.documents.author')
+        ->names('clinicaldocumentation');
 });

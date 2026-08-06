@@ -8,9 +8,39 @@
         "Modules\\ClinicalDocumentation\\Providers\\ClinicalDocumentationServiceProvider"
     ],
     "files": [],
-    "permissions": [],
+    "permissions": [
+        "clinicaldocumentation.documents.author",
+        "clinicaldocumentation.documents.sign",
+        "clinicaldocumentation.documents.amend",
+        "clinicaldocumentation.records.read",
+        "clinicaldocumentation.records.break-glass",
+        "clinicaldocumentation.archive.manage",
+        "clinicaldocumentation.audit.view"
+    ],
     "dictionary": [],
     "require": ["HospitalCore"],
+    "capabilities": {
+        "provides": [
+            {
+                "id": "clinicaldocumentation.active-clinical-record",
+                "version": "1.0.0",
+                "modes": ["sync"],
+                "contracts": {
+                    "sync": "contracts/clinicaldocumentation.active-clinical-record/v1/contract.md"
+                },
+                "providerContractTest": "tests/Contract/ActiveClinicalRecordContractTest.php"
+            }
+        ],
+        "consumes": [
+            {
+                "id": "medicalrecords.ciphertext-vault",
+                "version": "^1.0",
+                "mode": "async",
+                "required": false,
+                "consumerContractTest": "tests/Contract/MedicalRecordsCiphertextVaultConsumerTest.php"
+            }
+        ]
+    },
     "menuStructure": [
         {
             "title": "ClinicalDocumentation",
