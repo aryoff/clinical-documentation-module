@@ -1,16 +1,20 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { Head, Link, router } from "@inertiajs/react";
+import { FileLock2, History, ShieldCheck } from "lucide-react";
+import { type ActionBarHandle } from "@/Components/ActionBar";
+import { Badge } from "@/Components/ui/badge";
+import { Button } from "@/Components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Input } from "@/Components/ui/input";
+import { Label } from "@/Components/ui/label";
+import { Textarea } from "@/Components/ui/textarea";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout/AuthenticatedLayout";
 import Content from "@/Layouts/AuthenticatedLayout/Components/Content";
 
 type Document = { document_id: string; template: string; template_version: string; status: string; payload: Record<string, unknown>; encountered_at: string; signed_at: string | null };
 export default function Show({ document }: { document: Document }) {
-    const [reason, setReason] = useState(""); const [payload, setPayload] = useState("{}");
+    const panel = useRef<ActionBarHandle>(null); const [reason, setReason] = useState(""); const [payload, setPayload] = useState("{}");
     const amend = (event: FormEvent) => { event.preventDefault(); try { router.post(route("clinicaldocumentation.amend", document.document_id), { reason, payload: JSON.parse(payload), encountered_at: new Date().toISOString() }); } catch { alert("Addendum payload must be valid JSON."); } };
-    return <AuthenticatedLayout><Content><Head title="Clinical document" />
-        <Link className="text-sm underline" href={route("clinicaldocumentation.index")}>Back to documents</Link>
-        <h1 className="mt-4 text-2xl font-semibold">{document.template} v{document.template_version}</h1><p className="text-sm text-muted-foreground">Signed {document.signed_at ? new Date(document.signed_at).toLocaleString() : "draft"}</p>
-        <pre className="mt-6 overflow-auto rounded border bg-muted p-4 text-sm">{JSON.stringify(document.payload, null, 2)}</pre>
-        <form className="mt-6 max-w-2xl space-y-3" onSubmit={amend}><h2 className="font-medium">Signed addendum</h2><input required className="w-full rounded border p-2" placeholder="Reason for correction or clarification" value={reason} onChange={(e) => setReason(e.target.value)} /><textarea className="h-40 w-full rounded border p-2 font-mono" value={payload} onChange={(e) => setPayload(e.target.value)} /><button className="rounded bg-primary px-4 py-2 text-primary-foreground">Record signed addendum</button></form>
-    </Content></AuthenticatedLayout>;
+    const form = <form className="space-y-4 p-5" onSubmit={amend}><div><p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Linked correction</p><h2 className="mt-2 font-semibold text-foreground">Signed addendum</h2></div><p className="text-sm text-muted-foreground">An addendum preserves this signed source and records why new information is needed.</p><div className="space-y-2"><Label htmlFor="reason">Reason</Label><Input id="reason" required placeholder="Clarification or correction reason" value={reason} onChange={(e) => setReason(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="addendum-payload">Addendum payload</Label><Textarea id="addendum-payload" className="min-h-48 font-mono text-xs" value={payload} onChange={(e) => setPayload(e.target.value)} /></div><Button className="w-full">Record signed addendum</Button></form>;
+    return <AuthenticatedLayout header="Clinical document"><Head title="Clinical document" /><Content actionBar={form} actionBarRef={panel}><div className="mb-6 flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm text-muted-foreground">Signed evidence for this care journey.</p></div><div className="flex gap-2"><Button asChild variant="outline"><Link href={route("clinicaldocumentation.index")}>Back to documents</Link></Button><Button onClick={() => panel.current?.expand()}>Add addendum</Button></div></div><Card><CardHeader><div className="flex items-start justify-between gap-4"><div><CardTitle>{document.template} <span className="text-muted-foreground">v{document.template_version}</span></CardTitle><CardDescription className="mt-2">Encountered {new Date(document.encountered_at).toLocaleString()} · signed {document.signed_at ? new Date(document.signed_at).toLocaleString() : "not yet"}</CardDescription></div><Badge><FileLock2 className="mr-1 size-3" />{document.status}</Badge></div></CardHeader><CardContent><pre className="overflow-auto rounded-md border bg-muted/40 p-4 text-sm">{JSON.stringify(document.payload, null, 2)}</pre></CardContent></Card><div className="mt-4 grid gap-4 md:grid-cols-2"><Card><CardHeader><ShieldCheck className="size-5 text-primary" /><CardTitle className="text-base">Immutable source</CardTitle><CardDescription>Access, emergency use, and future addenda preserve accountable evidence.</CardDescription></CardHeader></Card><Card><CardHeader><History className="size-5 text-primary" /><CardTitle className="text-base">Correction history</CardTitle><CardDescription>Use the action panel to add a reasoned record without changing this document.</CardDescription></CardHeader></Card></div></Content></AuthenticatedLayout>;
 }
