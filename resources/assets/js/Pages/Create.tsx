@@ -20,7 +20,7 @@ type ClinicalDocumentForm = {
 };
 
 function CreateActionBar({ handoffId }: CreateProps) {
-    const { data, post, processing, setData, errors } = useForm<ClinicalDocumentForm>({
+    const { data, post, processing, setData, transform, errors } = useForm<ClinicalDocumentForm>({
         handoff_id: handoffId,
         template: "soap",
         template_version: "1.0.0",
@@ -32,12 +32,21 @@ function CreateActionBar({ handoffId }: CreateProps) {
     const submit = (event: FormEvent) => {
         event.preventDefault();
 
+        let parsed: Record<string, any>;
+
         try {
-            setData("payload", JSON.parse(payload));
-            post(route("clinicaldocumentation.store"));
+            parsed = JSON.parse(payload);
         } catch {
             alert("Payload must be valid JSON.");
+
+            return;
         }
+
+        // setData only lands on the next render, so the first submit would post
+        // the untouched initial payload and be rejected as empty. transform
+        // applies to the request being sent.
+        transform((current) => ({ ...current, payload: parsed }));
+        post(route("clinicaldocumentation.store"));
     };
 
     return <form className="space-y-4 p-5" onSubmit={submit}>

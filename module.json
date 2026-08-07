@@ -18,7 +18,7 @@
         "clinicaldocumentation.audit.view"
     ],
     "dictionary": [],
-    "require": ["HospitalCore"],
+    "require": [],
     "capabilities": {
         "provides": [
             {
@@ -53,6 +53,12 @@
                     "name": "clinicaldocumentation.index",
                     "routeName": "clinicaldocumentation.index",
                     "icon": "List"
+                },
+                {
+                    "title": "Clinical Access Audit",
+                    "name": "clinicaldocumentation.audit",
+                    "routeName": "clinicaldocumentation.audit",
+                    "icon": "ShieldCheck"
                 }
             ]
         }

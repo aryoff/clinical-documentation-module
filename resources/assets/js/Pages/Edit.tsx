@@ -1,6 +1,6 @@
-import { Head, useForm } from "@inertiajs/react";
+import { Head, router, useForm } from "@inertiajs/react";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
-import { FilePenLine } from "lucide-react";
+import { FileLock2, FilePenLine } from "lucide-react";
 import { type ActionBarHandle } from "@/Components/ActionBar";
 import { Button } from "@/Components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
@@ -14,7 +14,7 @@ type EditProps = { document: Document };
 type ClinicalDocumentForm = { payload: Record<string, any>; encountered_at: string };
 
 function EditActionBar({ document }: EditProps) {
-    const { put, processing, setData } = useForm<ClinicalDocumentForm>({
+    const { put, processing, transform } = useForm<ClinicalDocumentForm>({
         payload: document.payload,
         encountered_at: document.encountered_at,
     });
@@ -23,13 +23,24 @@ function EditActionBar({ document }: EditProps) {
     const submit = (event: FormEvent) => {
         event.preventDefault();
 
+        let parsed: Record<string, any>;
+
         try {
-            setData("payload", JSON.parse(payload));
-            put(route("clinicaldocumentation.update", document.id));
+            parsed = JSON.parse(payload);
         } catch {
             alert("Payload must be valid JSON.");
+
+            return;
         }
+
+        // setData only lands on the next render, so the first submit would save
+        // the payload the draft already held. transform applies to the request
+        // being sent.
+        transform((current) => ({ ...current, payload: parsed }));
+        put(route("clinicaldocumentation.update", document.id));
     };
+
+    const sign = () => router.post(route("clinicaldocumentation.submit", document.id));
 
     return <form className="space-y-4 p-5" onSubmit={submit}>
         <div>
@@ -41,6 +52,10 @@ function EditActionBar({ document }: EditProps) {
             <Textarea id="payload" className="min-h-80 font-mono text-xs" value={payload} onChange={(event) => setPayload(event.target.value)} />
         </div>
         <Button className="w-full" disabled={processing}>Save draft</Button>
+        <p className="text-xs text-muted-foreground">Signing locks this document permanently. Save first: only what is saved is signed.</p>
+        <Button type="button" variant="destructive" className="w-full" disabled={processing} onClick={sign}>
+            <FileLock2 className="mr-1 size-4" />Sign and lock
+        </Button>
     </form>;
 }
 

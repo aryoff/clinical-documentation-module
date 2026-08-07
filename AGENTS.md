@@ -47,11 +47,20 @@ This module handles Electronic Medical Records (EMR) and clinical documentation 
 
 ## System Integration (module.json)
 This module makes extensive use of `module.json` for system integration:
+- **`require` is empty, deliberately**: nothing in this module's application code imports HospitalCore. The ICD-10 vocabulary is validated against a code shape here, not fetched from `HospitalCore\DiagnosisService`, so there is no collaboration to declare. If a real dependency appears, declare it as a capability consumption in `capabilities.consumes` — not as a module `require`.
 - **Permissions**: Defined in `module.json` and synced via `ModulePermissionsSyncSeeder`. UI visibility is controlled by these strings matching the `routeName` or used in `FormRequest::authorize()`.
 - **Menu Structure**: Defined in `module.json`. Filtered authoritatively by `PopulateModuleMenuAndZiggyController`.
 - **Icon Mapping**: `module.json` `"icon"` must be an exact PascalCase `lucide-react` export name present in the `menuIconComponents` allowlist in `resources/js/Assets/MenuIcons.tsx`. Do not add custom SVG wrappers for ordinary module menu icons (root ADR 0001).
 
 ## Testing
-- **Backend Tests**: `./vendor/bin/sail artisan test --parallel --processes=8 Modules/ClinicalDocumentation/tests`
+- **Backend Tests**: `./vendor/bin/sail artisan test --parallel --processes=8 Modules/ClinicalDocumentation/tests --exclude-group=browser` — the `--exclude-group` matters. `phpunit.xml` excludes `Modules/*/tests/Browser` from the `Modules` suite, but naming a path on the command line bypasses that and would run the browser journey without a browser harness.
 - **Frontend Tests**: `npx vitest run Modules/ClinicalDocumentation/resources/assets/js`
+- **Browser Journey**: `./vendor/bin/sail vendor/bin/pest --configuration=phpunit.dusk.xml --group=clinical-authoring` — select by group, not by path; a path argument matches nothing against that configuration's suites.
+- **Permission coverage**: every string in `module.json` `permissions` is exercised at the HTTP boundary in both outcomes by `tests/Feature/ClinicalDocumentationAuthorizationTest.php`. Adding a permission means adding its authorized and its denied test there.
+- **Authoring needs a handoff**: no care context accepts a Clinical Handoff through its own UI yet, so tests accept one through `ActiveClinicalRecordContract::acceptHandoff()` before driving the authoring routes.
+
+## Emergency Access (Break Glass)
+- **Route**: `POST /clinical-documentation/{id}/break-glass`, with `GET` serving the reason form. Both consume `clinicaldocumentation.records.break-glass`.
+- **Reachability**: `show` redirects a break-glass holder to the reason form when they have no treating handoff, so the emergency path is reached the way a responder actually meets it.
+- **Scope**: signed documents only — a private draft stays private to its author. The access records actor, reason, time and a correlation id, is flagged `security_review_required`, and grants no write.
 

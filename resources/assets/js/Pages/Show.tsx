@@ -1,7 +1,8 @@
 import { Head, Link, router } from "@inertiajs/react";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
-import { FileLock2, History, ShieldCheck } from "lucide-react";
+import { Archive, FileLock2, History, ShieldCheck } from "lucide-react";
 import { type ActionBarHandle } from "@/Components/ActionBar";
+import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
@@ -22,9 +23,9 @@ type Document = {
     encountered_at: string;
     signed_at: string | null;
 };
-type ShowProps = { document: Document };
+type ShowProps = { document: Document; immutabilityNotice?: string | null; canArchive?: boolean };
 
-function AddendumActionBar({ document }: ShowProps) {
+function AddendumActionBar({ document }: Pick<ShowProps, "document">) {
     const [reason, setReason] = useState("");
     const [payload, setPayload] = useState("{}");
 
@@ -76,12 +77,26 @@ function ShowLayout({ page, document }: { page: ReactNode; document: Document })
     </AuthenticatedLayout>;
 }
 
-const Show = ({ document }: ShowProps) => <>
+const Show = ({ document, immutabilityNotice, canArchive }: ShowProps) => <>
     <Head title="Clinical document" />
+    {immutabilityNotice && <Alert className="mb-6">
+        <FileLock2 className="size-4" />
+        <AlertTitle>{immutabilityNotice}</AlertTitle>
+        <AlertDescription>
+            The signed source stays exactly as you signed it. Record what changed as a reasoned addendum instead.
+            <Button className="mt-3" onClick={() => window.dispatchEvent(new Event(openAddendumPanel))}>Record an addendum instead</Button>
+        </AlertDescription>
+    </Alert>}
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">Signed evidence for this care journey.</p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline"><Link href={route("clinicaldocumentation.index")}>Back to documents</Link></Button>
+            {route().has("clinicaldocumentation.audit") && <Button asChild variant="outline">
+                <Link href={route("clinicaldocumentation.audit", { document_id: document.document_id })}>Access audit</Link>
+            </Button>}
+            {canArchive && <Button variant="outline" onClick={() => router.post(route("clinicaldocumentation.archive", document.document_id))}>
+                <Archive className="mr-1 size-4" />Request archive
+            </Button>}
             <Button onClick={() => window.dispatchEvent(new Event(openAddendumPanel))}>Add addendum</Button>
         </div>
     </div>
