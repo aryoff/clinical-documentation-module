@@ -24,11 +24,14 @@
             {
                 "id": "clinicaldocumentation.active-clinical-record",
                 "version": "1.0.0",
-                "modes": ["sync"],
+                "modes": [
+                    "sync"
+                ],
                 "contracts": {
                     "sync": "contracts/clinicaldocumentation.active-clinical-record/v1/contract.md"
                 },
-                "providerContractTest": "tests/Contract/ActiveClinicalRecordContractTest.php"
+                "providerContractTest": "tests/Contract/ActiveClinicalRecordContractTest.php",
+                "binding": "Modules\\ClinicalDocumentation\\Contracts\\ActiveClinicalRecordContract"
             }
         ],
         "consumes": [
@@ -62,6 +65,5 @@
                 }
             ]
         }
-
     ]
 }
