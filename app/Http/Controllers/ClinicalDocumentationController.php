@@ -11,7 +11,13 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
+use Modules\ClinicalDocumentation\Http\Requests\AmendClinicalDocumentRequest;
+use Modules\ClinicalDocumentation\Http\Requests\CreateClinicalDocumentRequest;
+use Modules\ClinicalDocumentation\Http\Requests\EditClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\RequestClinicalArchiveRequest;
+use Modules\ClinicalDocumentation\Http\Requests\SignClinicalDocumentRequest;
+use Modules\ClinicalDocumentation\Http\Requests\StoreClinicalDocumentRequest;
+use Modules\ClinicalDocumentation\Http\Requests\UpdateClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\ViewClinicalAuditRequest;
 use Modules\ClinicalDocumentation\Models\ClinicalAuditEvent;
 use Modules\ClinicalDocumentation\Models\ClinicalDocument;
@@ -35,7 +41,7 @@ class ClinicalDocumentationController extends Controller
         ]);
     }
 
-    public function create(Request $request): Response|RedirectResponse
+    public function create(CreateClinicalDocumentRequest $request): Response|RedirectResponse
     {
         if (!$request->query('handoff_id')) {
             return redirect()->route('clinicaldocumentation.index')
@@ -45,15 +51,9 @@ class ClinicalDocumentationController extends Controller
         return Inertia::render('ClinicalDocumentation::Create', ['handoffId' => $request->query('handoff_id')]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreClinicalDocumentRequest $request): RedirectResponse
     {
-        $command = $request->validate([
-            'handoff_id' => ['required', 'uuid'],
-            'template' => ['required', 'string'],
-            'template_version' => ['required', 'string'],
-            'encountered_at' => ['required', 'date'],
-            'payload' => ['required', 'array'],
-        ]);
+        $command = $request->validated();
         $document = $this->records->createDraft($command, (string) $request->user()->id);
 
         return redirect()->route('clinicaldocumentation.edit', $document['document_id'])
@@ -86,7 +86,7 @@ class ClinicalDocumentationController extends Controller
         ]);
     }
 
-    public function edit(Request $request, string $id): Response|RedirectResponse
+    public function edit(EditClinicalDocumentRequest $request, string $id): Response|RedirectResponse
     {
         $document = $this->authoredDocument($request, $id);
         if ($document->status !== 'draft') {
@@ -96,12 +96,9 @@ class ClinicalDocumentationController extends Controller
         return Inertia::render('ClinicalDocumentation::Edit', ['document' => $document]);
     }
 
-    public function update(Request $request, string $id): RedirectResponse
+    public function update(UpdateClinicalDocumentRequest $request, string $id): RedirectResponse
     {
-        $changes = $request->validate([
-            'payload' => ['sometimes', 'array'],
-            'encountered_at' => ['sometimes', 'date'],
-        ]);
+        $changes = $request->validated();
 
         // The service refuses this too, but a signed record met at the HTTP
         // boundary deserves the addendum route rather than a server error.
@@ -114,7 +111,7 @@ class ClinicalDocumentationController extends Controller
         return back()->with('success', 'Clinical document draft updated.');
     }
 
-    public function submit(Request $request, string $id): RedirectResponse
+    public function submit(SignClinicalDocumentRequest $request, string $id): RedirectResponse
     {
         // Signing is one click from the draft form, so the two ways it can
         // legitimately arrive wrong — an already-signed document in a stale tab
@@ -134,13 +131,9 @@ class ClinicalDocumentationController extends Controller
             ->with('success', 'Clinical document signed and locked.');
     }
 
-    public function amend(Request $request, string $id): RedirectResponse
+    public function amend(AmendClinicalDocumentRequest $request, string $id): RedirectResponse
     {
-        $command = $request->validate([
-            'reason' => ['required', 'string'],
-            'payload' => ['required', 'array'],
-            'encountered_at' => ['required', 'date'],
-        ]);
+        $command = $request->validated();
         $command['document_id'] = $id;
         $addendum = $this->records->createAddendum($command, (string) $request->user()->id);
         $this->records->signAddendum($addendum['addendum_id'], (string) $request->user()->id);
