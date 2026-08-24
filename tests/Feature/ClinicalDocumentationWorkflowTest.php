@@ -10,6 +10,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
 use Modules\ClinicalDocumentation\Models\ClinicalAuditEvent;
 use Modules\ClinicalDocumentation\Models\ClinicalDocument;
+use Modules\ClinicalDocumentation\Tests\Support\CredentialsClinicalActors;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -19,6 +20,7 @@ use Tests\TestCase;
  */
 class ClinicalDocumentationWorkflowTest extends TestCase
 {
+    use CredentialsClinicalActors;
     use RefreshDatabase;
 
     private ActiveClinicalRecordContract $records;
@@ -37,7 +39,7 @@ class ClinicalDocumentationWorkflowTest extends TestCase
 
     public function test_a_signed_document_refuses_an_edit_and_directs_its_author_to_an_addendum(): void
     {
-        $this->clinician->givePermissionTo('clinicaldocumentation.documents.author');
+        $this->grantClinicalAbility($this->clinician, 'clinicaldocumentation.documents.author');
         $signed = $this->signedDocument();
 
         $this->actingAs($this->clinician)
@@ -60,10 +62,8 @@ class ClinicalDocumentationWorkflowTest extends TestCase
 
     public function test_the_refused_edit_carries_its_addendum_prompt_into_the_document_page(): void
     {
-        $this->clinician->givePermissionTo([
-            'clinicaldocumentation.documents.author',
-            'clinicaldocumentation.records.read',
-        ]);
+        $this->clinician->givePermissionTo('clinicaldocumentation.records.read');
+        $this->grantClinicalAbility($this->clinician, 'clinicaldocumentation.documents.author');
         $signed = $this->signedDocument();
 
         $this->actingAs($this->clinician)
@@ -78,7 +78,7 @@ class ClinicalDocumentationWorkflowTest extends TestCase
 
     public function test_signing_an_already_signed_document_is_refused_with_the_addendum_prompt(): void
     {
-        $this->clinician->givePermissionTo('clinicaldocumentation.documents.sign');
+        $this->grantClinicalAbility($this->clinician, 'clinicaldocumentation.documents.sign');
         $signed = $this->signedDocument();
 
         // A stale tab or a double submit reaches this; it must refuse, not 500.
@@ -90,7 +90,7 @@ class ClinicalDocumentationWorkflowTest extends TestCase
 
     public function test_signing_an_emptied_draft_is_refused_rather_than_erroring(): void
     {
-        $this->clinician->givePermissionTo('clinicaldocumentation.documents.sign');
+        $this->grantClinicalAbility($this->clinician, 'clinicaldocumentation.documents.sign');
         $draft = $this->records->createDraft([
             'handoff_id' => $this->handoff()['handoff_id'],
             'template' => 'soap',
@@ -131,7 +131,9 @@ class ClinicalDocumentationWorkflowTest extends TestCase
 
     public function test_a_clinical_document_is_never_deleted_through_the_boundary(): void
     {
-        $this->clinician->givePermissionTo('clinicaldocumentation.documents.author');
+        // Credentialed, so the 405 is the routing table refusing everyone
+        // rather than the Gate refusing this actor in particular.
+        $this->grantClinicalAbility($this->clinician, 'clinicaldocumentation.documents.author');
         $signed = $this->signedDocument();
 
         $this->actingAs($this->clinician)

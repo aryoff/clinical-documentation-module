@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
 use Modules\ClinicalDocumentation\Models\ClinicalDocument;
+use Modules\ClinicalDocumentation\Tests\Support\CredentialsClinicalActors;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -18,6 +19,7 @@ use Tests\TestCase;
  */
 class ClinicalDocumentationAuthorizationTest extends TestCase
 {
+    use CredentialsClinicalActors;
     use RefreshDatabase;
 
     private ActiveClinicalRecordContract $records;
@@ -98,7 +100,7 @@ class ClinicalDocumentationAuthorizationTest extends TestCase
 
     public function test_an_authorized_author_opens_the_form_and_stores_a_private_draft(): void
     {
-        $this->clinician->givePermissionTo('clinicaldocumentation.documents.author');
+        $this->grantClinicalAbility($this->clinician, 'clinicaldocumentation.documents.author');
         $handoff = $this->handoff();
 
         $this->actingAs($this->clinician)
@@ -135,7 +137,7 @@ class ClinicalDocumentationAuthorizationTest extends TestCase
 
     public function test_an_authorized_author_edits_their_own_draft(): void
     {
-        $this->clinician->givePermissionTo('clinicaldocumentation.documents.author');
+        $this->grantClinicalAbility($this->clinician, 'clinicaldocumentation.documents.author');
         $draft = $this->draft();
 
         $this->actingAs($this->clinician)
@@ -168,7 +170,7 @@ class ClinicalDocumentationAuthorizationTest extends TestCase
 
     public function test_an_authorized_signer_locks_the_document(): void
     {
-        $this->clinician->givePermissionTo('clinicaldocumentation.documents.sign');
+        $this->grantClinicalAbility($this->clinician, 'clinicaldocumentation.documents.sign');
         $draft = $this->draft();
 
         $this->actingAs($this->clinician)
@@ -197,7 +199,7 @@ class ClinicalDocumentationAuthorizationTest extends TestCase
 
     public function test_an_authorized_author_records_a_signed_addendum(): void
     {
-        $this->clinician->givePermissionTo('clinicaldocumentation.documents.amend');
+        $this->grantClinicalAbility($this->clinician, 'clinicaldocumentation.documents.amend');
         $signed = $this->signedDocument();
 
         $this->actingAs($this->clinician)

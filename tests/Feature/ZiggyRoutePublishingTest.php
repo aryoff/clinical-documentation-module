@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Modules\ClinicalDocumentation\Tests\Feature;
 
 use App\Models\User;
-use App\Support\CapabilityRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\ClinicalDocumentation\Tests\Support\CredentialsClinicalActors;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -23,6 +23,7 @@ use Tests\TestCase;
  */
 class ZiggyRoutePublishingTest extends TestCase
 {
+    use CredentialsClinicalActors;
     use RefreshDatabase;
 
     /** Every route this module gates on a clinical ability. */
@@ -75,8 +76,7 @@ class ZiggyRoutePublishingTest extends TestCase
         $clinician = User::factory()->create();
 
         foreach (array_keys(self::CLINICAL_ROUTES) as $ability) {
-            $clinician->givePermissionTo($ability);
-            $this->credentialActor((string) $clinician->id, $ability);
+            $this->grantClinicalAbility($clinician, $ability);
         }
 
         // Without HospitalCore composed there is no clinical-authority regime,
@@ -102,34 +102,5 @@ class ZiggyRoutePublishingTest extends TestCase
         return array_keys(
             $this->actingAs($user)->getJson(route('populateSidebar'))->assertOk()->json('ziggy.routes'),
         );
-    }
-
-    /**
-     * Credentialing is asked of HospitalCore by capability ID rather than by
-     * importing its contract, so this file still compiles — and this suite still
-     * runs — in a fork composed without it.
-     */
-    private function credentialActor(string $userId, string $ability): void
-    {
-        $registry = $this->app->make(CapabilityRegistry::class);
-
-        foreach ($registry->providerBindings('hospitalcore.clinical-authority-credentialing') as $binding) {
-            if ($this->app->bound($binding)) {
-                $this->app->make($binding)->credentialActor(['user_id' => $userId, 'ability' => $ability]);
-
-                return;
-            }
-        }
-    }
-
-    private function clinicalAuthorityRegimeIsComposed(): bool
-    {
-        foreach ($this->app->make(CapabilityRegistry::class)->providerBindings('hospitalcore.clinical-authority-credentialing') as $binding) {
-            if ($this->app->bound($binding)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
