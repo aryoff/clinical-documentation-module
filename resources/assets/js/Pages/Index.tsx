@@ -29,30 +29,42 @@ function WorkflowActionBar() {
     </aside>;
 }
 
-const Index = ({ documents }: { documents: { data: Document[] } }) => <>
-    <Head title="Clinical documents" />
-    <p className="mb-6 text-sm text-muted-foreground">Review your private drafts and signed clinical evidence. Start a document from an accepted Clinical Handoff in its originating care workflow.</p>
-    <div className="grid gap-4 lg:grid-cols-2">
-        {documents.data.map((document) => <Link key={document.id} href={route(document.status === "draft" ? "clinicaldocumentation.edit" : "clinicaldocumentation.show", document.id)}>
-            <Card className="h-full transition-colors hover:bg-muted/50">
-                <CardHeader className="flex-row items-start justify-between space-y-0">
-                    <div>
-                        <CardTitle className="text-base">{document.template} <span className="text-muted-foreground">v{document.template_version}</span></CardTitle>
-                        <CardDescription className="mt-2">Encountered {new Date(document.encountered_at).toLocaleString()}</CardDescription>
-                    </div>
-                    <Badge variant={document.status === "signed" ? "default" : "secondary"}>{document.status}</Badge>
+const DocumentCard = ({ document }: { document: Document }) => <Card className="h-full transition-colors hover:bg-muted/50">
+    <CardHeader className="flex-row items-start justify-between space-y-0">
+        <div>
+            <CardTitle className="text-base">{document.template} <span className="text-muted-foreground">v{document.template_version}</span></CardTitle>
+            <CardDescription className="mt-2">Encountered {new Date(document.encountered_at).toLocaleString()}</CardDescription>
+        </div>
+        <Badge variant={document.status === "signed" ? "default" : "secondary"}>{document.status}</Badge>
+    </CardHeader>
+    <CardContent className="text-sm text-muted-foreground">{document.signed_at ? `Signed ${new Date(document.signed_at).toLocaleString()}` : "Private draft — continue authoring"}</CardContent>
+</Card>;
+
+const Index = ({ documents }: { documents: { data: Document[] } }) => {
+    // Reading this list and authoring against it are separate authorities. A
+    // reader who lost the authoring one has the edit route stripped from Ziggy,
+    // and `route()` on a name Ziggy has never heard of throws rather than
+    // handing back a dead href — so their own drafts are listed without a way in.
+    const canAuthor = route().has("clinicaldocumentation.edit");
+
+    return <>
+        <Head title="Clinical documents" />
+        <p className="mb-6 text-sm text-muted-foreground">Review your private drafts and signed clinical evidence. Start a document from an accepted Clinical Handoff in its originating care workflow.</p>
+        <div className="grid gap-4 lg:grid-cols-2">
+            {documents.data.map((document) => document.status === "draft" && !canAuthor
+                ? <DocumentCard key={document.id} document={document} />
+                : <Link key={document.id} href={route(document.status === "draft" ? "clinicaldocumentation.edit" : "clinicaldocumentation.show", document.id)}>
+                    <DocumentCard document={document} />
+                </Link>)}
+            {documents.data.length === 0 && <Card className="lg:col-span-2">
+                <CardHeader>
+                    <CardTitle>No clinical documents yet</CardTitle>
+                    <CardDescription>Accepted handoffs will open the appropriate authoring path.</CardDescription>
                 </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">{document.signed_at ? `Signed ${new Date(document.signed_at).toLocaleString()}` : "Private draft — continue authoring"}</CardContent>
-            </Card>
-        </Link>)}
-        {documents.data.length === 0 && <Card className="lg:col-span-2">
-            <CardHeader>
-                <CardTitle>No clinical documents yet</CardTitle>
-                <CardDescription>Accepted handoffs will open the appropriate authoring path.</CardDescription>
-            </CardHeader>
-        </Card>}
-    </div>
-</>;
+            </Card>}
+        </div>
+    </>;
+};
 
 Index.layout = (page: ReactNode) => <AuthenticatedLayout header="Clinical documents">
     <Content actionBar={<WorkflowActionBar />}>{page}</Content>

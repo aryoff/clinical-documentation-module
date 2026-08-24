@@ -12,6 +12,14 @@ This module handles Electronic Medical Records (EMR) and clinical documentation 
 - **Action Bar Width**: Uses `useActionBar().setExpandedWidth(width)` (often via a `TabWidthSetter` component) to manage sidebar persistent state.
 - **Styling**: Always use root's `global.css` for consistent design tokens and layout variables.
 
+## Clinical Authority Gating
+
+Three of this module's permissions are classified **clinical** in HospitalCore's `module.json` — `documents.author`, `documents.sign` and `documents.amend`. Reading, auditing, archiving and Break-Glass are not. A clinical permission is refused by `Gate::before` unless the user holds a matching Clinical Authority, so holding it by role is **not** proof the action is available.
+
+- **Gate in a `FormRequest`.** `permission:` middleware is kept as defence in depth but is invisible to `/populateSidebar`, which reflects the `FormRequest`. See [Modules/AGENTS.md](../AGENTS.md#authorization-belongs-in-a-formrequest).
+- **Guard every control with `route().has()`.** The three authorities are distinct and pages are reachable without them: `Pages/Edit.tsx` shows "Sign and lock" only where the signing route survived, `Pages/Show.tsx` fits the addendum panel only where the amend route did, and `Pages/Index.tsx` links a draft to its editor only where authoring did — `route()` on a name Ziggy no longer carries throws rather than returning a dead href. See [Modules/AGENTS.md](../AGENTS.md#and-the-control-it-gates-is-not-rendered).
+- **A domain refusal is not an authorization refusal.** Editing a signed document, submitting twice, or emptying a draft must be answered by the domain rule, with a credentialed actor. Tests that credential through `tests/Support/CredentialsClinicalActors` prove the rule; an uncredentialed actor proves only the Gate.
+
 ## Modular Classification
 - **Classification**: **OPTIONAL** module.
 - **Role**: Part of the "Hospital Layer". Owns the Active Clinical Record — signed clinical documents, Diagnosis Assertions, Allergy Assertions, addenda, and the authorization of encrypted archive release.

@@ -52,10 +52,16 @@ function EditActionBar({ document }: EditProps) {
             <Textarea id="payload" className="min-h-80 font-mono text-xs" value={payload} onChange={(event) => setPayload(event.target.value)} />
         </div>
         <Button className="w-full" disabled={processing}>Save draft</Button>
-        <p className="text-xs text-muted-foreground">Signing locks this document permanently. Save first: only what is saved is signed.</p>
-        <Button type="button" variant="destructive" className="w-full" disabled={processing} onClick={sign}>
-            <FileLock2 className="mr-1 size-4" />Sign and lock
-        </Button>
+        {/* Authoring a draft and signing it are separate authorities. A scribe
+            holding only the first reaches this page; `/populateSidebar` strips
+            the signing route for them, so the button is absent rather than
+            waiting to answer with a 403. */}
+        {route().has("clinicaldocumentation.submit") && <>
+            <p className="text-xs text-muted-foreground">Signing locks this document permanently. Save first: only what is saved is signed.</p>
+            <Button type="button" variant="destructive" className="w-full" disabled={processing} onClick={sign}>
+                <FileLock2 className="mr-1 size-4" />Sign and lock
+            </Button>
+        </>}
     </form>;
 }
 

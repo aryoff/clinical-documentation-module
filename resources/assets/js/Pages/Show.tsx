@@ -72,8 +72,13 @@ function ShowLayout({ page, document }: { page: ReactNode; document: Document })
         return () => window.removeEventListener(openAddendumPanel, open);
     }, []);
 
+    // Reading a signed document and amending one are separate authorities, and
+    // Break-Glass buys a read and never a write. Without the amend route the
+    // panel has nothing to offer, so the ActionBar is not fitted at all.
+    const canAmend = route().has("clinicaldocumentation.amend");
+
     return <AuthenticatedLayout header="Clinical document">
-        <Content actionBar={<AddendumActionBar document={document} />} actionBarRef={panel}>{page}</Content>
+        <Content actionBar={canAmend ? <AddendumActionBar document={document} /> : undefined} actionBarRef={panel}>{page}</Content>
     </AuthenticatedLayout>;
 }
 
@@ -84,7 +89,7 @@ const Show = ({ document, immutabilityNotice, canArchive }: ShowProps) => <>
         <AlertTitle>{immutabilityNotice}</AlertTitle>
         <AlertDescription>
             The signed source stays exactly as you signed it. Record what changed as a reasoned addendum instead.
-            <Button className="mt-3" onClick={() => window.dispatchEvent(new Event(openAddendumPanel))}>Record an addendum instead</Button>
+            {route().has("clinicaldocumentation.amend") && <Button className="mt-3" onClick={() => window.dispatchEvent(new Event(openAddendumPanel))}>Record an addendum instead</Button>}
         </AlertDescription>
     </Alert>}
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -97,7 +102,7 @@ const Show = ({ document, immutabilityNotice, canArchive }: ShowProps) => <>
             {canArchive && <Button variant="outline" onClick={() => router.post(route("clinicaldocumentation.archive", document.document_id))}>
                 <Archive className="mr-1 size-4" />Request archive
             </Button>}
-            <Button onClick={() => window.dispatchEvent(new Event(openAddendumPanel))}>Add addendum</Button>
+            {route().has("clinicaldocumentation.amend") && <Button onClick={() => window.dispatchEvent(new Event(openAddendumPanel))}>Add addendum</Button>}
         </div>
     </div>
     <Card>
