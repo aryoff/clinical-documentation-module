@@ -16,7 +16,7 @@ This module handles Electronic Medical Records (EMR) and clinical documentation 
 
 Three of this module's permissions are classified **clinical** in HospitalCore's `module.json` — `documents.author`, `documents.sign` and `documents.amend`. Reading, auditing, archiving and Break-Glass are not. A clinical permission is refused by `Gate::before` unless the user holds a matching Clinical Authority, so holding it by role is **not** proof the action is available.
 
-- **Gate in a `FormRequest`.** `permission:` middleware is kept as defence in depth but is invisible to `/populateSidebar`, which reflects the `FormRequest`. See [Modules/AGENTS.md](../AGENTS.md#authorization-belongs-in-a-formrequest).
+- **Gate in a `FormRequest`; `permission:` middleware does not satisfy this rule.** `/populateSidebar` reflects the `FormRequest` and strips the route when `authorize()` refuses, but it cannot see middleware. The module's routes therefore decide in their requests, with the canonical rule in [Modules/AGENTS.md](../AGENTS.md#authorization-belongs-in-a-formrequest).
 - **Guard every control with `route().has()`.** The three authorities are distinct and pages are reachable without them: `Pages/Edit.tsx` shows "Sign and lock" only where the signing route survived, `Pages/Show.tsx` fits the addendum panel only where the amend route did, and `Pages/Index.tsx` links a draft to its editor only where authoring did — `route()` on a name Ziggy no longer carries throws rather than returning a dead href. See [Modules/AGENTS.md](../AGENTS.md#and-the-control-it-gates-is-not-rendered).
 - **A domain refusal is not an authorization refusal.** Editing a signed document, submitting twice, or emptying a draft must be answered by the domain rule, with a credentialed actor. Tests that credential through `tests/Support/CredentialsClinicalActors` prove the rule; an uncredentialed actor proves only the Gate.
 
@@ -71,4 +71,3 @@ This module makes extensive use of `module.json` for system integration:
 - **Route**: `POST /clinical-documentation/{id}/break-glass`, with `GET` serving the reason form. Both consume `clinicaldocumentation.records.break-glass`.
 - **Reachability**: `show` redirects a break-glass holder to the reason form when they have no treating handoff, so the emergency path is reached the way a responder actually meets it.
 - **Scope**: signed documents only — a private draft stays private to its author. The access records actor, reason, time and a correlation id, is flagged `security_review_required`, and grants no write.
-
