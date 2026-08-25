@@ -19,23 +19,19 @@ use Modules\ClinicalDocumentation\Http\Controllers\ClinicalDocumentationControll
 Route::middleware(['web', 'auth'])->group(function () {
     // Sign an immutable Clinical Document.
     Route::post('/clinical-documentation/{id}/submit', [ClinicalDocumentationController::class, 'submit'])
-        ->middleware('permission:clinicaldocumentation.documents.sign')
         ->name('clinicaldocumentation.submit');
 
     // Create and sign a reasoned addendum without changing the source document.
     Route::post('/clinical-documentation/{id}/amend', [ClinicalDocumentationController::class, 'amend'])
-        ->middleware('permission:clinicaldocumentation.documents.amend')
         ->name('clinicaldocumentation.amend');
 
     // Reasoned emergency access. It buys one audited read of a signed document
     // and never a write, so it is deliberately its own path rather than a
     // relaxation of the treating-access rule guarding `show`.
     Route::get('/clinical-documentation/{id}/break-glass', [ClinicalDocumentationController::class, 'breakGlassForm'])
-        ->middleware('permission:clinicaldocumentation.records.break-glass')
         ->name('clinicaldocumentation.break-glass.create');
 
     Route::post('/clinical-documentation/{id}/break-glass', [ClinicalDocumentationController::class, 'breakGlass'])
-        ->middleware('permission:clinicaldocumentation.records.break-glass')
         ->name('clinicaldocumentation.break-glass');
 
     // Authorize a bounded archive package for one signed document. Gated by
@@ -52,12 +48,5 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     // Standard Clinical Document routes.
     Route::resource('clinicaldocumentation', ClinicalDocumentationController::class)
-        ->middlewareFor(['index'], 'permission:clinicaldocumentation.records.read')
-        // A responder carrying only Break-Glass has to reach `show` for its
-        // redirect to send them to the reason form. Stopping them at the
-        // middleware would answer the emergency with a bare 403; the treating
-        // relationship is still enforced inside, by readDocument().
-        ->middlewareFor(['show'], 'permission:clinicaldocumentation.records.read|clinicaldocumentation.records.break-glass')
-        ->middlewareFor(['create', 'store', 'edit', 'update'], 'permission:clinicaldocumentation.documents.author')
         ->names('clinicaldocumentation');
 });

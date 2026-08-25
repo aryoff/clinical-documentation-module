@@ -12,13 +12,17 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
 use Modules\ClinicalDocumentation\Http\Requests\AmendClinicalDocumentRequest;
+use Modules\ClinicalDocumentation\Http\Requests\BreakGlassFormRequest;
+use Modules\ClinicalDocumentation\Http\Requests\BreakGlassRequest;
 use Modules\ClinicalDocumentation\Http\Requests\CreateClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\EditClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\RequestClinicalArchiveRequest;
 use Modules\ClinicalDocumentation\Http\Requests\SignClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\StoreClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\UpdateClinicalDocumentRequest;
+use Modules\ClinicalDocumentation\Http\Requests\ViewClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\ViewClinicalAuditRequest;
+use Modules\ClinicalDocumentation\Http\Requests\ViewClinicalDocumentsRequest;
 use Modules\ClinicalDocumentation\Models\ClinicalAuditEvent;
 use Modules\ClinicalDocumentation\Models\ClinicalDocument;
 
@@ -31,7 +35,7 @@ class ClinicalDocumentationController extends Controller
 
     public function __construct(private readonly ActiveClinicalRecordContract $records) {}
 
-    public function index(Request $request): Response
+    public function index(ViewClinicalDocumentsRequest $request): Response
     {
         return Inertia::render('ClinicalDocumentation::Index', [
             'documents' => ClinicalDocument::query()
@@ -60,7 +64,7 @@ class ClinicalDocumentationController extends Controller
             ->with('success', 'Private clinical document draft created.');
     }
 
-    public function show(Request $request, string $id): Response|RedirectResponse
+    public function show(ViewClinicalDocumentRequest $request, string $id): Response|RedirectResponse
     {
         try {
             $document = $this->records->readDocument($id, (string) $request->user()->id, 'clinical-record-review');
@@ -81,7 +85,7 @@ class ClinicalDocumentationController extends Controller
             'immutabilityNotice' => $request->session()->get(self::IMMUTABLE_NOTICE_KEY),
             // The permission alone does not earn the button: archive custody is
             // author-scoped, so offering it to a non-author would only 403.
-            'canArchive' => $request->user()->can('clinicaldocumentation.archive.manage')
+            'canArchive' => $request->mayRequestArchive()
                 && ClinicalDocument::query()->whereKey($id)->where('author_id', (string) $request->user()->id)->exists(),
         ]);
     }
@@ -142,7 +146,7 @@ class ClinicalDocumentationController extends Controller
             ->with('success', 'Signed addendum recorded without changing the source document.');
     }
 
-    public function breakGlassForm(string $id): Response
+    public function breakGlassForm(BreakGlassFormRequest $request, string $id): Response
     {
         // Signed evidence only, matching what breakGlassRead will allow. Serving
         // the form for a draft would confirm that draft's existence to someone
@@ -152,9 +156,9 @@ class ClinicalDocumentationController extends Controller
         ]);
     }
 
-    public function breakGlass(Request $request, string $id): Response
+    public function breakGlass(BreakGlassRequest $request, string $id): Response
     {
-        $command = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
+        $command = $request->validated();
         $document = $this->records->breakGlassRead($id, (string) $request->user()->id, $command['reason']);
 
         // The emergency read is audited once. Inertia keeps page props in
@@ -216,11 +220,11 @@ class ClinicalDocumentationController extends Controller
             ->firstOrFail();
     }
 
-    private function mayBreakGlassOn(Request $request, string $id): bool
+    private function mayBreakGlassOn(ViewClinicalDocumentRequest $request, string $id): bool
     {
         // Break-Glass reaches signed evidence only; a private draft stays
         // private to its author even in an emergency.
-        return $request->user()->can('clinicaldocumentation.records.break-glass')
+        return $request->mayBreakGlass()
             && ClinicalDocument::query()->whereKey($id)->where('status', 'signed')->exists();
     }
 

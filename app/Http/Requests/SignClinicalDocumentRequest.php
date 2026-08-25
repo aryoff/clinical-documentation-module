@@ -13,8 +13,8 @@ use Illuminate\Foundation\Http\FormRequest;
  * and keeps any route that has none, so a Clinical Authority denial left the
  * Sign control on the draft form and answered the press with a 403.
  *
- * The middleware stays as defence in depth, as Modules/AGENTS.md allows; what
- * it must not be is the only gate.
+ * The route now carries this request directly; the permission middleware is no
+ * longer needed because the same gate is visible to the route publisher.
  */
 class SignClinicalDocumentRequest extends FormRequest
 {

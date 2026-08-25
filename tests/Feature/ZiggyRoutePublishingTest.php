@@ -13,8 +13,8 @@ use Tests\TestCase;
 /**
  * The sidebar payload advertises the routes a user may call, and it reads
  * exactly two signals: a route name that is character-for-character a
- * permission, and what the action's FormRequest::authorize() returns. Authoring,
- * signing and amending were gated by `permission:` middleware alone — enforced,
+ * permission, and what the action's FormRequest::authorize() returns. The
+ * module's routes used to rely on `permission:` middleware alone — enforced,
  * but invisible here — so the payload carried them for every authenticated user
  * and the controls they back rendered for a clinician the Gate refuses.
  *
@@ -38,6 +38,21 @@ class ZiggyRoutePublishingTest extends TestCase
         'clinicaldocumentation.documents.amend' => ['clinicaldocumentation.amend'],
     ];
 
+    /** Every non-clinical route this module publishes through a FormRequest. */
+    private const NON_CLINICAL_ROUTES = [
+        'clinicaldocumentation.records.read' => [
+            'clinicaldocumentation.index',
+            'clinicaldocumentation.show',
+        ],
+        'clinicaldocumentation.records.break-glass' => [
+            'clinicaldocumentation.show',
+            'clinicaldocumentation.break-glass.create',
+            'clinicaldocumentation.break-glass',
+        ],
+        'clinicaldocumentation.archive.manage' => ['clinicaldocumentation.archive'],
+        'clinicaldocumentation.audit.view' => ['clinicaldocumentation.audit'],
+    ];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -54,6 +69,36 @@ class ZiggyRoutePublishingTest extends TestCase
         foreach (self::CLINICAL_ROUTES as $ability => $routes) {
             foreach ($routes as $route) {
                 $this->assertNotContains($route, $published, "[{$route}] is advertised to a user who cannot {$ability}.");
+            }
+        }
+    }
+
+    public function test_no_non_clinical_route_is_advertised_to_a_user_without_its_permission(): void
+    {
+        $outsider = User::factory()->create();
+
+        $published = $this->publishedRoutes($outsider);
+
+        foreach (self::NON_CLINICAL_ROUTES as $ability => $routes) {
+            foreach ($routes as $route) {
+                $this->assertNotContains($route, $published, "[{$route}] is advertised to a user who cannot {$ability}.");
+            }
+        }
+    }
+
+    public function test_a_non_clinical_permission_holder_is_told_about_every_route_they_may_call(): void
+    {
+        $user = User::factory()->create();
+
+        foreach (array_keys(self::NON_CLINICAL_ROUTES) as $ability) {
+            $user->givePermissionTo($ability);
+        }
+
+        $published = $this->publishedRoutes($user);
+
+        foreach (self::NON_CLINICAL_ROUTES as $ability => $routes) {
+            foreach ($routes as $route) {
+                $this->assertContains($route, $published, "[{$route}] is withheld from a user holding {$ability}.");
             }
         }
     }
