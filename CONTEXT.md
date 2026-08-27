@@ -25,6 +25,9 @@ A clinically authored structured statement of substance, reaction, severity, ver
 **Clinical Handoff**:
 The explicit, auditable authorization that grants eligible staff in a care context permission to author clinical documents for a linked journey.
 
+**Takeover Safety Read**:
+A narrow, auditable read of safety facts for a clinician who holds shortfall Takeover Authority. It uses the originating clinician's accepted Clinical Handoff as the treatment-context anchor, but grants neither document visibility nor clinical-document authoring and is not Break-Glass Clinical Access.
+
 **Clinical Document Visibility**:
 The policy that determines which authorized users may view a clinical document or class of document and records its access.
 
@@ -67,6 +70,6 @@ The sealed, access-controlled retention of finalized Clinical Documents and thei
 
 **MedicalRecords** — the optional ciphertext vault. This context alone holds the keys, encrypts every Clinical Payload before it leaves the application, keeps the archive manifest, and authorizes each bounded one-patient release. Vault absence means sealed Local Clinical Retention, never a blocked discharge.
 
-**EPrescription** — independently installable. A Clinical Rationale Reference may link a prescription to signed reasoning, but urgent prescribing works with no clinical document and this context works with no prescriber.
+**EPrescription** — independently installable. A Clinical Rationale Reference may link a prescription to signed reasoning, but urgent prescribing works with no clinical document and this context works with no prescriber. A clinician with shortfall Takeover Authority may request a Takeover Safety Read anchored by the originating clinician's accepted Clinical Handoff; it receives safety facts only, never Clinical Document visibility or authoring rights, and no new Clinical Handoff is created.
 
 **Warehouse** — a guarded provider holding batch custody behind Clinical Consumable Usage. This context owns why a supply was used; Warehouse owns the stock truth, joined by one consumable audit correlation.
