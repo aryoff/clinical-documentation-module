@@ -6,6 +6,7 @@ namespace Modules\ClinicalDocumentation\Tests\Contract;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
 use Tests\TestCase;
 
@@ -111,6 +112,46 @@ class ActiveClinicalRecordContractTest extends TestCase
             'encountered_at' => '2026-08-06T10:00:00+07:00',
             'payload' => ['subjective' => 'Must not be written by emergency reader.'],
         ], (string) $breakGlass['accessed_by']);
+    }
+
+    public function test_a_delegated_prescriber_receives_safety_facts_only_when_the_authorizing_actor_holds_the_handoff(): void
+    {
+        $signed = $this->signedDocument();
+        $delegate = User::factory()->create();
+
+        $facts = $this->records->safetyFactsForDelegatedPrescriber(
+            $signed['patient_id'],
+            (string) $delegate->id,
+            (string) $this->clinician->id,
+            $signed['handoff_id'],
+            'medication-prescribing',
+        );
+
+        $this->assertSame('medication-prescribing', $facts['purpose']);
+        $this->assertDatabaseHas('cd_clinical_audit_events', [
+            'action' => 'safety_facts_read',
+            'actor_id' => (string) $delegate->id,
+            'patient_id' => $signed['patient_id'],
+        ]);
+        $this->assertSame((string) $this->clinician->id, json_decode(
+            (string) DB::table('cd_clinical_audit_events')
+                ->where('action', 'safety_facts_read')
+                ->where('actor_id', (string) $delegate->id)
+                ->value('metadata'),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        )['authorized_by']);
+        $this->assertSame((string) $signed['handoff_id'], json_decode(
+            (string) DB::table('cd_clinical_audit_events')
+                ->where('action', 'safety_facts_read')
+                ->where('actor_id', (string) $delegate->id)
+                ->value('metadata'),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        )['handoff_id']);
+
+        $this->expectException(\Illuminate\Auth\Access\AuthorizationException::class);
+        $this->records->readDocument($signed['document_id'], (string) $delegate->id, 'medication-prescribing');
     }
 
     public function test_archive_request_uses_sealed_local_retention_when_no_vault_capability_is_resolved(): void

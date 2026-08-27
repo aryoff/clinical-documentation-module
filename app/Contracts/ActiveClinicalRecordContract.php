@@ -45,6 +45,15 @@ interface ActiveClinicalRecordContract
     /** @return array<string, mixed> */
     public function safetyFactsForPatient(string $patientId, string $actorId, string $purpose): array;
 
+    /**
+     * Read safety facts as a delegated prescriber while auditing both actors.
+     * The authorizing actor must hold the accepted treatment handoff; the
+     * delegated actor receives safety facts only, never document access.
+     *
+     * @return array<string, mixed>
+     */
+    public function safetyFactsForDelegatedPrescriber(string $patientId, string $actorId, string $authorizingActorId, string $handoffId, string $purpose): array;
+
     /** @return array<string, mixed> */
     public function archiveDocument(string $documentId, string $actorId): array;
 }

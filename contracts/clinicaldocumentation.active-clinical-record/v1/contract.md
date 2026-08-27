@@ -44,6 +44,13 @@ Hospital Registration IDs, and Patient Registry IDs are UUID strings.
   transitions the package to `pending_custody` until its own receipt contract
   verifies custody.
 
+`safetyFactsForDelegatedPrescriber(patientId, actorId, authorizingActorId,
+handoffId, purpose)` returns the same purpose-scoped safety facts to a delegated
+prescriber when the authorizing actor is the accepted recipient of that exact
+originating treatment handoff.
+The delegated actor is audited, and this operation grants no document read or
+clinical-document authoring access.
+
 ## Compatibility
 
 Consumers declare `^1.0` and may rely only on documented request/response

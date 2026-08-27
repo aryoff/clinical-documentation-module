@@ -289,6 +289,23 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
     {
         $this->assertTreatingAccess($patientId, $actorId);
         $purpose = $this->requiredPurpose($purpose);
+        return $this->safetyFacts($patientId, $actorId, $purpose);
+    }
+
+    public function safetyFactsForDelegatedPrescriber(string $patientId, string $actorId, string $authorizingActorId, string $handoffId, string $purpose): array
+    {
+        $this->assertAcceptedHandoff($patientId, $authorizingActorId, $handoffId);
+        $purpose = $this->requiredPurpose($purpose);
+
+        return $this->safetyFacts($patientId, $actorId, $purpose, [
+            'authorized_by' => $authorizingActorId,
+            'handoff_id' => $handoffId,
+        ]);
+    }
+
+    /** @param array<string, mixed> $metadata */
+    private function safetyFacts(string $patientId, string $actorId, string $purpose, array $metadata = []): array
+    {
         $allergies = AllergyAssertion::query()
             ->where('patient_id', $patientId)
             ->orderBy('asserted_at')
@@ -316,7 +333,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
                 'assertion_type' => $diagnosis->assertion_type,
             ])
             ->all();
-        $this->audit('safety_facts_read', $actorId, $patientId, null, null, $purpose);
+        $this->audit('safety_facts_read', $actorId, $patientId, null, null, $purpose, $metadata);
 
         return ['patient_id' => $patientId, 'purpose' => $purpose, 'allergies' => $allergies, 'diagnoses' => $diagnoses];
     }
@@ -366,9 +383,25 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
 
     private function assertTreatingAccess(string $patientId, string $actorId): void
     {
-        if (!ClinicalHandoff::query()->where('patient_id', $patientId)->where('recipient_id', $actorId)->exists()) {
-            throw new AuthorizationException('Clinical access requires an accepted treatment handoff or a reasoned Break-Glass action.');
+        if (ClinicalHandoff::query()->where('patient_id', $patientId)->where('recipient_id', $actorId)->exists()) {
+            return;
         }
+
+        throw new AuthorizationException('Clinical access requires an accepted treatment handoff or a reasoned Break-Glass action.');
+    }
+
+    private function assertAcceptedHandoff(string $patientId, string $actorId, string $handoffId): void
+    {
+        if (ClinicalHandoff::query()
+            ->whereKey($handoffId)
+            ->where('patient_id', $patientId)
+            ->where('recipient_id', $actorId)
+            ->whereNotNull('accepted_at')
+            ->exists()) {
+            return;
+        }
+
+        throw new AuthorizationException('Delegated safety access requires the originating accepted treatment handoff.');
     }
 
     private function requiredString(array $command, string $key): string
