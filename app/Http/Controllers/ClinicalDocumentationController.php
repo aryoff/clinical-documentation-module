@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ClinicalDocumentation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Services\FileVaultService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,16 +16,22 @@ use Modules\ClinicalDocumentation\Http\Requests\AmendClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\BreakGlassFormRequest;
 use Modules\ClinicalDocumentation\Http\Requests\BreakGlassRequest;
 use Modules\ClinicalDocumentation\Http\Requests\CreateClinicalDocumentRequest;
+use Modules\ClinicalDocumentation\Http\Requests\CreatePresentedExternalEvidenceRequest;
 use Modules\ClinicalDocumentation\Http\Requests\EditClinicalDocumentRequest;
+use Modules\ClinicalDocumentation\Http\Requests\IncorporatePresentedExternalEvidenceRequest;
 use Modules\ClinicalDocumentation\Http\Requests\RequestClinicalArchiveRequest;
+use Modules\ClinicalDocumentation\Http\Requests\ReviewPresentedExternalEvidenceRequest;
 use Modules\ClinicalDocumentation\Http\Requests\SignClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\StoreClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\UpdateClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\ViewClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\ViewClinicalAuditRequest;
 use Modules\ClinicalDocumentation\Http\Requests\ViewClinicalDocumentsRequest;
+use Modules\ClinicalDocumentation\Http\Requests\StagePresentedExternalEvidenceRequest;
+use Modules\ClinicalDocumentation\Http\Requests\ViewPresentedExternalEvidenceFileRequest;
 use Modules\ClinicalDocumentation\Models\ClinicalAuditEvent;
 use Modules\ClinicalDocumentation\Models\ClinicalDocument;
+use Modules\ClinicalDocumentation\Services\PresentedExternalEvidenceService;
 
 class ClinicalDocumentationController extends Controller
 {
@@ -33,7 +40,69 @@ class ClinicalDocumentationController extends Controller
     /** Flashed by a refused edit and rendered by `show` as the addendum prompt. */
     private const IMMUTABLE_NOTICE_KEY = 'immutabilityNotice';
 
-    public function __construct(private readonly ActiveClinicalRecordContract $records) {}
+    public function __construct(
+        private readonly ActiveClinicalRecordContract $records,
+        private readonly PresentedExternalEvidenceService $externalEvidence,
+        private readonly FileVaultService $files,
+    ) {}
+
+    public function createPresentedExternalEvidence(CreatePresentedExternalEvidenceRequest $request): Response
+    {
+        $registrationId = (string) $request->query('registration_id');
+        $registration = $this->externalEvidence->activeRegistration($registrationId);
+        abort_unless($registration !== null, 404);
+
+        return Inertia::render('ClinicalDocumentation::PresentedExternalEvidence/Create', [
+            'registrationId' => $registrationId,
+            'evidence' => $this->externalEvidence->unreviewedForRegistration(
+                $registrationId,
+                (string) $registration['patient_id'],
+                $request->user(),
+            ),
+        ]);
+    }
+
+    public function storePresentedExternalEvidence(StagePresentedExternalEvidenceRequest $request): RedirectResponse
+    {
+        $registrationId = (string) $request->validated('registration_id');
+        $this->externalEvidence->stage(
+            $request->file('file'),
+            $registrationId,
+            (string) $request->validated('claim'),
+            $request->user(),
+        );
+
+        return redirect()->route('clinicaldocumentation.presented-external-evidence.create', [
+            'registration_id' => $registrationId,
+        ])->with('success', 'Presented external evidence staged for clinician review.');
+    }
+
+    public function reviewPresentedExternalEvidence(ReviewPresentedExternalEvidenceRequest $request, string $id): RedirectResponse
+    {
+        $documentId = (string) $request->validated('document_id');
+        $this->externalEvidence->review($id, $documentId, $request->user());
+
+        return redirect()->route('clinicaldocumentation.edit', $documentId)
+            ->with('success', 'Presented external evidence reviewed during clinical authoring.');
+    }
+
+    public function incorporatePresentedExternalEvidence(IncorporatePresentedExternalEvidenceRequest $request, string $id): RedirectResponse
+    {
+        $documentId = (string) $request->validated('document_id');
+        $this->externalEvidence->incorporate($id, $documentId, $request->user());
+
+        return redirect()->route('clinicaldocumentation.edit', $documentId)
+            ->with('success', 'Incorporation decision recorded during clinical authoring.')
+            ->with('presentedExternalEvidenceIncorporated', true);
+    }
+
+    public function filePresentedExternalEvidence(ViewPresentedExternalEvidenceFileRequest $request, string $id): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $file = $this->externalEvidence->fileFor($id, $request->user());
+        $stream = $this->files->streamFileWithRange($file->disk, $file->file_path, $file->mime_type);
+
+        return response()->stream($stream['stream'], $stream['status'], $stream['headers']);
+    }
 
     public function index(ViewClinicalDocumentsRequest $request): Response
     {
@@ -97,7 +166,13 @@ class ClinicalDocumentationController extends Controller
             return redirect()->route('clinicaldocumentation.show', $id)->with(self::IMMUTABLE_NOTICE_KEY, self::IMMUTABLE_NOTICE);
         }
 
-        return Inertia::render('ClinicalDocumentation::Edit', ['document' => $document]);
+        return Inertia::render('ClinicalDocumentation::Edit', [
+            'document' => $document,
+            'presentedExternalEvidence' => $this->externalEvidence->unreviewedForDocument($document, $request->user()),
+            'reviewedExternalEvidence' => $this->externalEvidence->reviewedForDocument($document, $request->user()),
+            'presentedExternalEvidenceIncorporated' => $request->session()->pull('presentedExternalEvidenceIncorporated', false),
+            'clinicalDocumentDraftUpdated' => $request->session()->pull('clinicalDocumentDraftUpdated', false),
+        ]);
     }
 
     public function update(UpdateClinicalDocumentRequest $request, string $id): RedirectResponse
@@ -112,7 +187,9 @@ class ClinicalDocumentationController extends Controller
 
         $this->records->updateDraft($id, $changes, (string) $request->user()->id);
 
-        return back()->with('success', 'Clinical document draft updated.');
+        return back()
+            ->with('success', 'Clinical document draft updated.')
+            ->with('clinicalDocumentDraftUpdated', true);
     }
 
     public function submit(SignClinicalDocumentRequest $request, string $id): RedirectResponse

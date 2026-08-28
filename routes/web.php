@@ -17,6 +17,23 @@ use Modules\ClinicalDocumentation\Http\Controllers\ClinicalDocumentationControll
 */
 
 Route::middleware(['web', 'auth'])->group(function () {
+    Route::middleware('capability:hospitalcore.hospital-registration')->group(function () {
+        Route::get('/clinical-documentation/presented-external-evidence/create', [ClinicalDocumentationController::class, 'createPresentedExternalEvidence'])
+            ->name('clinicaldocumentation.presented-external-evidence.create');
+
+        Route::post('/clinical-documentation/presented-external-evidence', [ClinicalDocumentationController::class, 'storePresentedExternalEvidence'])
+            ->name('clinicaldocumentation.presented-external-evidence.store');
+
+        Route::post('/clinical-documentation/presented-external-evidence/{id}/review', [ClinicalDocumentationController::class, 'reviewPresentedExternalEvidence'])
+            ->name('clinicaldocumentation.presented-external-evidence.review');
+
+        Route::post('/clinical-documentation/presented-external-evidence/{id}/incorporate', [ClinicalDocumentationController::class, 'incorporatePresentedExternalEvidence'])
+            ->name('clinicaldocumentation.presented-external-evidence.incorporate');
+
+        Route::get('/clinical-documentation/presented-external-evidence/{id}/file', [ClinicalDocumentationController::class, 'filePresentedExternalEvidence'])
+            ->name('clinicaldocumentation.presented-external-evidence.file');
+    });
+
     // Sign an immutable Clinical Document.
     Route::post('/clinical-documentation/{id}/submit', [ClinicalDocumentationController::class, 'submit'])
         ->name('clinicaldocumentation.submit');

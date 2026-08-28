@@ -3,17 +3,19 @@ import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "rea
 import { FileLock2, FilePenLine } from "lucide-react";
 import { type ActionBarHandle } from "@/Components/ActionBar";
 import { Button } from "@/Components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Label } from "@/Components/ui/label";
 import { Textarea } from "@/Components/ui/textarea";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout/AuthenticatedLayout";
 import Content from "@/Layouts/AuthenticatedLayout/Components/Content";
 
 type Document = { id: string; payload: Record<string, unknown>; encountered_at: string };
-type EditProps = { document: Document };
+type PresentedExternalEvidence = { id: string; claim: string; staged_by_name: string; staged_at: string; original_filename: string | null; file_url: string; can_open_file: boolean };
+type ReviewedExternalEvidence = PresentedExternalEvidence & { incorporated: boolean };
+type EditProps = { document: Document; presentedExternalEvidence: PresentedExternalEvidence[]; reviewedExternalEvidence: ReviewedExternalEvidence[]; presentedExternalEvidenceIncorporated: boolean; clinicalDocumentDraftUpdated: boolean };
 type ClinicalDocumentForm = { payload: Record<string, any>; encountered_at: string };
 
-function EditActionBar({ document }: EditProps) {
+function EditActionBar({ document }: { document: Document }) {
     const { put, processing, transform } = useForm<ClinicalDocumentForm>({
         payload: document.payload,
         encountered_at: document.encountered_at,
@@ -75,16 +77,40 @@ function EditLayout({ page, document }: { page: ReactNode; document: Document })
     </AuthenticatedLayout>;
 }
 
-const Edit = ({ document }: EditProps) => <>
+const Edit = ({ document, presentedExternalEvidence, reviewedExternalEvidence, presentedExternalEvidenceIncorporated, clinicalDocumentDraftUpdated }: EditProps) => <>
     <Head title="Edit clinical draft" />
     <p className="mb-6 text-sm text-muted-foreground">Drafts remain private to their author. Signing locks this source document permanently; later clarification is a separate addendum.</p>
-    <Card>
-        <CardHeader>
-            <FilePenLine className="size-5 text-primary" />
-            <CardTitle>Draft protection</CardTitle>
-            <CardDescription>Only you can update this draft. Its recorded encounter time remains {new Date(document.encountered_at).toLocaleString()}.</CardDescription>
-        </CardHeader>
-    </Card>
+    {reviewedExternalEvidence.some((evidence) => !evidence.incorporated) && <div className="mb-6 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm" data-testid="external-evidence-reviewed">
+        <p>Evidence review recorded. Decide explicitly what, if anything, to incorporate into this draft.</p>
+        {reviewedExternalEvidence.filter((evidence) => !evidence.incorporated).map((evidence) => route().has("clinicaldocumentation.presented-external-evidence.incorporate") && <Button key={evidence.id} id={`record-external-evidence-incorporation-${evidence.id}`} className="mt-3 mr-2" size="sm" onClick={() => router.post(route("clinicaldocumentation.presented-external-evidence.incorporate", evidence.id), { document_id: document.id })}>Record incorporation decision</Button>)}
+    </div>}
+    {(presentedExternalEvidenceIncorporated || reviewedExternalEvidence.some((evidence) => evidence.incorporated)) && <p className="mb-6 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm" data-testid="external-evidence-incorporated">Incorporation decision recorded. Add only what you determine belongs in this draft.</p>}
+    {clinicalDocumentDraftUpdated && <p className="mb-6 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm" data-testid="clinical-draft-updated">Draft saved.</p>}
+    <div className="space-y-6">
+        <Card>
+            <CardHeader>
+                <FilePenLine className="size-5 text-primary" />
+                <CardTitle>Draft protection</CardTitle>
+                <CardDescription>Only you can update this draft. Its recorded encounter time remains {new Date(document.encountered_at).toLocaleString()}.</CardDescription>
+            </CardHeader>
+        </Card>
+        {presentedExternalEvidence.length > 0 && <Card>
+            <CardHeader>
+                <CardTitle>Staged external evidence</CardTitle>
+                <CardDescription>Review the custody record and file, then decide whether to incorporate anything into this clinical document. Nothing is added automatically.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+                {presentedExternalEvidence.map((evidence) => <div key={evidence.id} className="rounded-md border p-4" data-testid="staged-external-evidence">
+                    <p className="font-medium">{evidence.claim}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{evidence.original_filename ?? "Uploaded file"} · staged by {evidence.staged_by_name}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {evidence.can_open_file && route().has("clinicaldocumentation.presented-external-evidence.file") && <Button asChild size="sm" variant="outline"><a href={evidence.file_url}>Open staged file</a></Button>}
+                        {route().has("clinicaldocumentation.presented-external-evidence.review") && <Button size="sm" onClick={() => router.post(route("clinicaldocumentation.presented-external-evidence.review", evidence.id), { document_id: document.id })}>Review for authoring</Button>}
+                    </div>
+                </div>)}
+            </CardContent>
+        </Card>}
+    </div>
 </>;
 
 Edit.layout = (page: ReactNode) => {

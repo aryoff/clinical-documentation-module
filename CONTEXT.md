@@ -16,6 +16,9 @@ An auditable linked correction or clarification of a signed Clinical Document th
 **Clinical Fact**:
 An immutable contract-defined statement published after a care context finalizes its own record, allowing derived records and projections without transferring source ownership. This is the generic shape; a publishing context defines its own named variant, such as a Laboratory Result Clinical Projection or a Prescription Clinical Fact, and remains the authority for the record behind it.
 
+**Presented External Evidence**:
+A patient-provided file or scan staged against an active Hospital Registration before the treating clinician takes over. ClinicalDocumentation records only the file custody, stager identity, staging time, and the patient's freeform claim about the file; it records no clinical interpretation, trust decision, or asserted source authority. A clinician reviews it during draft authoring and makes any clinical incorporation an explicit, auditable authoring act. It uses FileVault's short-lived protected storage, needs no accepted Clinical Handoff to stage, and performs no OCR.
+
 **Diagnosis Assertion**:
 A clinically authored, accountable statement of diagnosis linked to supporting clinical evidence.
 

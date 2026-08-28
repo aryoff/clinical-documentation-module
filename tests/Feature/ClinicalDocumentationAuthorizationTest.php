@@ -10,8 +10,13 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
 use Modules\ClinicalDocumentation\Models\ClinicalDocument;
 use Modules\ClinicalDocumentation\Tests\Support\CredentialsClinicalActors;
+use Modules\HospitalCore\Contracts\HospitalRegistrationContract;
+use Modules\HospitalCore\Models\Department;
+use Modules\HospitalCore\Models\Patient;
+use Modules\HospitalCore\Models\PatientGroup;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
+use Tests\Support\ModuleUnderTest;
 
 /**
  * Every permission declared in module.json, proven at the authenticated HTTP
@@ -213,6 +218,40 @@ class ClinicalDocumentationAuthorizationTest extends TestCase
         ]);
     }
 
+    // clinicaldocumentation.records.stage-external-evidence
+
+    public function test_staging_is_forbidden_without_the_staging_permission(): void
+    {
+        $this->requireHospitalCoreForStaging();
+
+        $this->actingAs($this->clinician)
+            ->get(route('clinicaldocumentation.presented-external-evidence.create', ['registration_id' => fake()->uuid()]))
+            ->assertForbidden();
+    }
+
+    public function test_a_user_with_the_staging_permission_can_open_the_staging_form(): void
+    {
+        $this->requireHospitalCoreForStaging();
+        $this->clinician->givePermissionTo('clinicaldocumentation.records.stage-external-evidence');
+        $registration = app(HospitalRegistrationContract::class)->begin([
+            'type' => 'outpatient',
+            'patient_id' => Patient::factory()->create()->id,
+            'department_id' => Department::factory()->create()->id,
+            'patient_group_id' => PatientGroup::factory()->create()->id,
+            'owner' => 'outpatient',
+            'actor_id' => (string) $this->clinician->id,
+        ]);
+        $registrationId = $registration['registration_id'];
+
+        $this->actingAs($this->clinician)
+            ->get(route('clinicaldocumentation.presented-external-evidence.create', ['registration_id' => $registrationId]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('ClinicalDocumentation::PresentedExternalEvidence/Create')
+                ->where('registrationId', $registrationId)
+            );
+    }
+
     // clinicaldocumentation.records.break-glass
 
     public function test_break_glass_is_forbidden_without_the_break_glass_permission(): void
@@ -400,5 +439,12 @@ class ClinicalDocumentationAuthorizationTest extends TestCase
             'payload' => ['clarification' => 'Symptoms started three days ago.'],
             'encountered_at' => '2026-08-06T09:00:00+07:00',
         ];
+    }
+
+    private function requireHospitalCoreForStaging(): void
+    {
+        if (!ModuleUnderTest::isEnabled('HospitalCore')) {
+            self::markTestSkipped('Presented external evidence staging requires the HospitalCore capability provider.');
+        }
     }
 }

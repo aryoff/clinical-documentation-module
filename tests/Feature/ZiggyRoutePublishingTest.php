@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\ClinicalDocumentation\Tests\Support\CredentialsClinicalActors;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
+use Tests\Support\ModuleUnderTest;
 
 /**
  * The sidebar payload advertises the routes a user may call, and it reads
@@ -33,6 +34,9 @@ class ZiggyRoutePublishingTest extends TestCase
             'clinicaldocumentation.store',
             'clinicaldocumentation.edit',
             'clinicaldocumentation.update',
+            'clinicaldocumentation.presented-external-evidence.review',
+            'clinicaldocumentation.presented-external-evidence.incorporate',
+            'clinicaldocumentation.presented-external-evidence.file',
         ],
         'clinicaldocumentation.documents.sign' => ['clinicaldocumentation.submit'],
         'clinicaldocumentation.documents.amend' => ['clinicaldocumentation.amend'],
@@ -51,6 +55,15 @@ class ZiggyRoutePublishingTest extends TestCase
         ],
         'clinicaldocumentation.archive.manage' => ['clinicaldocumentation.archive'],
         'clinicaldocumentation.audit.view' => ['clinicaldocumentation.audit'],
+    ];
+
+    /** Routes available only when the optional HospitalCore provider is composed. */
+    private const OPTIONAL_NON_CLINICAL_ROUTES = [
+        'clinicaldocumentation.records.stage-external-evidence' => [
+            'clinicaldocumentation.presented-external-evidence.create',
+            'clinicaldocumentation.presented-external-evidence.store',
+            'clinicaldocumentation.presented-external-evidence.file',
+        ],
     ];
 
     protected function setUp(): void
@@ -79,7 +92,7 @@ class ZiggyRoutePublishingTest extends TestCase
 
         $published = $this->publishedRoutes($outsider);
 
-        foreach (self::NON_CLINICAL_ROUTES as $ability => $routes) {
+        foreach ($this->nonClinicalRoutes() as $ability => $routes) {
             foreach ($routes as $route) {
                 $this->assertNotContains($route, $published, "[{$route}] is advertised to a user who cannot {$ability}.");
             }
@@ -90,13 +103,13 @@ class ZiggyRoutePublishingTest extends TestCase
     {
         $user = User::factory()->create();
 
-        foreach (array_keys(self::NON_CLINICAL_ROUTES) as $ability) {
+        foreach (array_keys($this->nonClinicalRoutes()) as $ability) {
             $user->givePermissionTo($ability);
         }
 
         $published = $this->publishedRoutes($user);
 
-        foreach (self::NON_CLINICAL_ROUTES as $ability => $routes) {
+        foreach ($this->nonClinicalRoutes() as $ability => $routes) {
             foreach ($routes as $route) {
                 $this->assertContains($route, $published, "[{$route}] is withheld from a user holding {$ability}.");
             }
@@ -147,5 +160,15 @@ class ZiggyRoutePublishingTest extends TestCase
         return array_keys(
             $this->actingAs($user)->getJson(route('populateSidebar'))->assertOk()->json('ziggy.routes'),
         );
+    }
+
+    /** @return array<string, list<string>> */
+    private function nonClinicalRoutes(): array
+    {
+        if (!ModuleUnderTest::isEnabled('HospitalCore')) {
+            return self::NON_CLINICAL_ROUTES;
+        }
+
+        return [...self::NON_CLINICAL_ROUTES, ...self::OPTIONAL_NON_CLINICAL_ROUTES];
     }
 }

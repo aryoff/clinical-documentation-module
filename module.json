@@ -13,6 +13,7 @@
         "clinicaldocumentation.documents.sign",
         "clinicaldocumentation.documents.amend",
         "clinicaldocumentation.records.read",
+        "clinicaldocumentation.records.stage-external-evidence",
         "clinicaldocumentation.records.break-glass",
         "clinicaldocumentation.archive.manage",
         "clinicaldocumentation.audit.view"
@@ -41,6 +42,13 @@
                 "mode": "async",
                 "required": false,
                 "consumerContractTest": "tests/Contract/MedicalRecordsCiphertextVaultConsumerTest.php"
+            },
+            {
+                "id": "hospitalcore.hospital-registration",
+                "version": "^1.4",
+                "mode": "sync",
+                "required": false,
+                "consumerContractTest": "tests/Contract/HospitalRegistrationConsumerTest.php"
             }
         ]
     },
