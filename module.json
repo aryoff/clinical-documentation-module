@@ -33,6 +33,18 @@
                 },
                 "providerContractTest": "tests/Contract/ActiveClinicalRecordContractTest.php",
                 "binding": "Modules\\ClinicalDocumentation\\Contracts\\ActiveClinicalRecordContract"
+            },
+            {
+                "id": "clinicaldocumentation.discharge-documentation",
+                "version": "1.0.0",
+                "modes": [
+                    "sync"
+                ],
+                "contracts": {
+                    "sync": "contracts/clinicaldocumentation.discharge-documentation/v1/contract.md"
+                },
+                "providerContractTest": "tests/Contract/DischargeDocumentationContractTest.php",
+                "binding": "Modules\\ClinicalDocumentation\\Contracts\\DischargeDocumentationContract"
             }
         ],
         "consumes": [

@@ -5,8 +5,10 @@ namespace Modules\ClinicalDocumentation\Providers;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
+use Modules\ClinicalDocumentation\Contracts\DischargeDocumentationContract;
 use Modules\ClinicalDocumentation\Contracts\HospitalRegistrationPort;
 use Modules\ClinicalDocumentation\Services\ActiveClinicalRecordService;
+use Modules\ClinicalDocumentation\Services\DischargeDocumentationService;
 use Modules\ClinicalDocumentation\Services\Capabilities\CapabilityHospitalRegistration;
 
 class ClinicalDocumentationServiceProvider extends ServiceProvider
@@ -36,6 +38,11 @@ class ClinicalDocumentationServiceProvider extends ServiceProvider
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
         $this->app->singleton(ActiveClinicalRecordContract::class, ActiveClinicalRecordService::class);
+        // The discharge-documentation boundary is its own capability rather
+        // than more operations on the active-clinical-record one, because its
+        // consumer is different: a ward asks whether an episode's paperwork is
+        // finished and must never be able to read what the paperwork says.
+        $this->app->singleton(DischargeDocumentationContract::class, DischargeDocumentationService::class);
         $this->app->scoped(HospitalRegistrationPort::class, CapabilityHospitalRegistration::class);
     }
 
