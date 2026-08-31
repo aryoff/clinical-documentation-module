@@ -72,6 +72,11 @@ itself a clinical-records system.
 context cannot produce a discharge summary at all; a consumer must decide what
 that means for its own workflow rather than defaulting to "finished".
 
+That is a safeguard, not a shape to design for. No supported composition with a
+ward omits this context — one did, and it was deleted as a fiction, because a
+hospital that documents nothing is not one. A consumer that treats the absent
+provider as its normal case has designed for a customer that does not exist.
+
 ## Compatibility
 
 Consumers declare `^1.0`. Within v1 the operation names, the outcome keys and

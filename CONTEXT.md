@@ -64,12 +64,29 @@ An optional public reference between a signed Clinical Document and an EPrescrip
 **Clinical Evidence Reference**:
 An optional public reference from a Billable Service Fact, prescription, or ancillary request to its supporting signed Clinical Document. It proves rationale without making this context the source of that financial, prescription, order, or result fact.
 
+**Inpatient Discharge Summary**:
+The Clinical Document authored against the `inpatient-discharge-summary` template when a ward sends a patient home. It is a Clinical Document like any other — signed once, corrected only by addendum — and what makes it a discharge summary is the template it is bound to and the required elements that template names.
+
+**Required Discharge Element**:
+One of the named parts a discharge summary must carry before it may be signed, published with the role that owns it. The list is this context's and is read from it rather than restated: a consumer that kept its own copy would eventually be the one telling a ward its paperwork was finished. A signature on a summary missing an element is refused, because signing an incomplete summary converts an omission into a certification.
+
+**Discharge Explanation Receipt**:
+The record that a signed discharge summary was explained to the patient or an authorised representative, in a stated language and with whatever support they needed. Insert-only: a correction is a new receipt. It is separate evidence from the summary itself, because a document that exists and a patient who understands it are different claims and only the second one makes a discharge safe.
+
+**Discharge Documentation Completion Outcome**:
+The provider-neutral answer to "is this episode's discharge paperwork actually finished" — complete or not, which elements are missing and who owns each, and whether a later signed document has overtaken the summary. It carries no clinical content. A consumer receives this and never the payload; one that reached for the document another way would have made itself a clinical-records system.
+
+**Superseded Discharge Summary**:
+A signed summary that a later signed document postdates. The completion outcome stops reporting complete, because something happened that the summary does not describe. A signed addendum restores it, which is the correction mechanism this context already has rather than a second one.
+
 **Local Clinical Retention**:
 The sealed, access-controlled retention of finalized Clinical Documents and their addendum chains when MedicalRecords is not installed, providing required custody without an external archive provider.
 
 ## Relationships
 
 **OperatingRoom, Obstetrics, Radiology, Laboratory, and PhysicalTherapy** — each owns its own execution, birth, imaging, specimen, or session evidence and publishes immutable projections here. Authoring in this context requires that source's explicit clinical handoff; a projection never transfers ownership of the source record.
+
+**InpatientCare** — the ward asks this context two questions and receives no clinical content for either: whether an accepted Clinical Handoff permits a clinician to author, and whether the episode's discharge documentation is complete. The second gates the ordinary discharge, so an incomplete summary keeps a patient in a bed. The ward owns the episode, the retention schedule for it and the audit of who read it; this context owns the documents and the release of them. Every supported composition with a ward carries this context, because a ward that documents nothing is not a hospital.
 
 **MedicalRecords** — the optional ciphertext vault. This context alone holds the keys, encrypts every Clinical Payload before it leaves the application, keeps the archive manifest, and authorizes each bounded one-patient release. Vault absence means sealed Local Clinical Retention, never a blocked discharge.
 
