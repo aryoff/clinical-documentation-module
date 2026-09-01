@@ -20,7 +20,16 @@ An immutable contract-defined statement published after a care context finalizes
 A patient-provided file or scan staged against an active Hospital Registration before the treating clinician takes over. ClinicalDocumentation records only the file custody, stager identity, staging time, and the patient's freeform claim about the file; it records no clinical interpretation, trust decision, or asserted source authority. A clinician reviews it during draft authoring and makes any clinical incorporation an explicit, auditable authoring act. It uses FileVault's short-lived protected storage, needs no accepted Clinical Handoff to stage, and performs no OCR.
 
 **Diagnosis Assertion**:
-A clinically authored, accountable statement of diagnosis linked to supporting clinical evidence.
+A clinically authored, accountable statement of diagnosis linked to supporting clinical evidence. The first assertion for an active care journey is the Initial Diagnosis Prerequisite for prescribing; later clinician-authored assertions preserve the earlier record while supplementing or superseding its current clinical interpretation.
+
+**Diagnosis Assertion Lineage**:
+The ordered history of immutable Diagnosis Assertions for an active care journey. Each supplemental or superseding assertion preserves the earlier nodes and identifies the current interpretation without rewriting clinical history.
+
+**Diagnostic Result Evidence**:
+An immutable laboratory or radiology result that may support a clinical interpretation. It is evidence for a Diagnosis Assertion, not a diagnosis itself, until an accountable clinician reviews and authors that assertion.
+
+**Clinical Diagnosis Read**:
+A purpose-scoped read of the complete Diagnosis Assertion Lineage and its linked diagnostic-result evidence, including prior interpretations and the current assertion heads. It permits an authorized clinician to make a decision but does not itself grant authoring authority.
 
 **Allergy Assertion**:
 A clinically authored structured statement of substance, reaction, severity, verification, and active status that optional safety consumers may read.
@@ -29,7 +38,7 @@ A clinically authored structured statement of substance, reaction, severity, ver
 The explicit, auditable authorization that grants eligible staff in a care context permission to author clinical documents for a linked journey.
 
 **Takeover Safety Read**:
-A narrow, auditable read of safety facts for a clinician who holds shortfall Takeover Authority. It uses the originating clinician's accepted Clinical Handoff as the treatment-context anchor, but grants neither document visibility nor clinical-document authoring and is not Break-Glass Clinical Access.
+A narrow, auditable read of safety facts and the Clinical Diagnosis Read for a clinician who holds shortfall Takeover Authority. It uses the originating clinician's accepted Clinical Handoff as the treatment-context anchor, grants no unrestricted document visibility or clinical-document authoring, and is not Break-Glass Clinical Access.
 
 **Clinical Document Visibility**:
 The policy that determines which authorized users may view a clinical document or class of document and records its access.
@@ -59,7 +68,7 @@ The clinical instruction for a treatment consumable that has no stock or billing
 The versioned definition of a clinical document type, its fields, eligible author professions, signing and co-signature policy, and applicable care settings. SOAP is an initial template, and a signed document stays bound to the version it was signed against.
 
 **Clinical Rationale Reference**:
-An optional public reference between a signed Clinical Document and an EPrescription-owned prescription. It preserves the clinical basis when both modules are installed; neither requires the other.
+A public reference between signed clinical reasoning and an EPrescription-owned prescription. It preserves the diagnosis and evidence behind prescribing; ClinicalDocumentation is required for the prescribing path, while neither context owns the other's records.
 
 **Clinical Evidence Reference**:
 An optional public reference from a Billable Service Fact, prescription, or ancillary request to its supporting signed Clinical Document. It proves rationale without making this context the source of that financial, prescription, order, or result fact.
@@ -90,6 +99,6 @@ The sealed, access-controlled retention of finalized Clinical Documents and thei
 
 **MedicalRecords** — the optional ciphertext vault. This context alone holds the keys, encrypts every Clinical Payload before it leaves the application, keeps the archive manifest, and authorizes each bounded one-patient release. Vault absence means sealed Local Clinical Retention, never a blocked discharge.
 
-**EPrescription** — independently installable. A Clinical Rationale Reference may link a prescription to signed reasoning, but urgent prescribing works with no clinical document and this context works with no prescriber. A clinician with shortfall Takeover Authority may request a Takeover Safety Read anchored by the originating clinician's accepted Clinical Handoff; it receives safety facts only, never Clinical Document visibility or authoring rights, and no new Clinical Handoff is created.
+**EPrescription** — depends on this context for prescribing. A Medication Prescription cannot be authored or issued without an Initial Diagnosis Prerequisite and a Clinical Rationale Reference to the accountable clinical record. A clinician with shortfall Takeover Authority may request a narrow, audited diagnosis and safety read anchored by the originating clinician's accepted Clinical Handoff; it receives only the facts needed to make a replacement decision, never unrestricted Clinical Document visibility or authoring rights, and no new Clinical Handoff is created. Laboratory and Radiology may publish results as supporting evidence; only an accountable clinician authors the resulting supplemental or superseding Diagnosis Assertion.
 
 **Warehouse** — a guarded provider holding batch custody behind Clinical Consumable Usage. This context owns why a supply was used; Warehouse owns the stock truth, joined by one consumable audit correlation.
