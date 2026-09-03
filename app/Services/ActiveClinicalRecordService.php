@@ -298,6 +298,15 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
                 'supersedes_assertion_id' => $predecessorId,
                 'evidence_refs' => $evidenceIds === [] ? null : $evidenceIds,
                 'note' => $command['note'] ?? null,
+                // Frozen where the caller supplied one. The ward's
+                // external-transfer intake does, because an admission decided
+                // on a transcribed referral has to record the credential the
+                // transcriber relied on even if it later lapses (#275). The
+                // ordinary authoring path supplies none, and that gap is named
+                // on #259 rather than closed here.
+                'clinical_authority_snapshot' => is_array($command['clinical_authority_snapshot'] ?? null)
+                    ? $command['clinical_authority_snapshot']
+                    : null,
                 'asserted_by' => $actorId,
                 'asserted_by_name' => $this->actorName($actorId),
                 'asserted_at' => now(),
@@ -323,6 +332,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
                 'assertion_id' => $assertion->id,
                 'lineage_id' => $assertion->lineage_id,
                 'revision' => $assertion->revision,
+                'clinical_authority_snapshot' => $assertion->clinical_authority_snapshot,
                 'document_id' => $document->id,
                 'patient_id' => $document->patient_id,
                 'registration_id' => $document->registration_id,
@@ -628,6 +638,11 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             'display' => $assertion->display,
             'assertion_type' => $assertion->assertion_type,
             'note' => $assertion->note,
+            // The credential the asserting clinician held at the moment they
+            // asserted, where one was frozen. A reader auditing an admission
+            // needs it on the fact rather than by joining back to the module
+            // that took the copy.
+            'clinical_authority_snapshot' => $assertion->clinical_authority_snapshot,
             'asserted_by' => $assertion->asserted_by,
             'asserted_by_name' => $assertion->asserted_by_name,
             'asserted_at' => $assertion->asserted_at->toAtomString(),

@@ -79,6 +79,15 @@ return new class extends Migration
             $table->uuid('supersedes_assertion_id')->nullable();
             $table->json('evidence_refs')->nullable();
             $table->text('note')->nullable();
+            // A frozen copy of the Clinical Authority the asserting clinician
+            // held, where the caller supplied one (#275). The external-transfer
+            // intake requires it: an admission decided on a transcribed
+            // referral has to record the credential the transcriber relied on,
+            // because a licence that lapses afterwards must not erase what was
+            // true when the bed was claimed. Nullable because the ordinary
+            // authoring path does not yet freeze one — that gap is broader than
+            // #259 and is named on it rather than closed here.
+            $table->json('clinical_authority_snapshot')->nullable();
             $table->uuid('asserted_by')->index();
             $table->string('asserted_by_name');
             $table->timestamp('asserted_at')->useCurrent();

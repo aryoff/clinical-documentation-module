@@ -39,7 +39,8 @@ interface ActiveClinicalRecordContract
      *
      * $command carries document_id, coding_system, code, display, assertion_type
      * (`initial`, `supplement` or `supersession`), an optional note, an optional
-     * list of evidence_ids, and — for a supersession only — the required
+     * list of evidence_ids, an optional clinical_authority_snapshot frozen by
+     * the caller, and — for a supersession only — the required
      * supersedes_assertion_id. The first assertion of a care journey must be
      * `initial`, and a supersession may only name an assertion that is still a
      * current head.

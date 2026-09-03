@@ -19,9 +19,9 @@ class DiagnosisAssertion extends Model
 
     protected $table = 'cd_diagnosis_assertions';
 
-    protected $fillable = ['lineage_id', 'document_id', 'registration_id', 'patient_id', 'coding_system', 'code', 'display', 'assertion_type', 'revision', 'supersedes_assertion_id', 'evidence_refs', 'note', 'asserted_by', 'asserted_by_name', 'asserted_at'];
+    protected $fillable = ['lineage_id', 'document_id', 'registration_id', 'patient_id', 'coding_system', 'code', 'display', 'assertion_type', 'revision', 'supersedes_assertion_id', 'evidence_refs', 'note', 'clinical_authority_snapshot', 'asserted_by', 'asserted_by_name', 'asserted_at'];
 
-    protected $casts = ['asserted_at' => 'datetime', 'revision' => 'integer', 'evidence_refs' => 'array'];
+    protected $casts = ['asserted_at' => 'datetime', 'revision' => 'integer', 'evidence_refs' => 'array', 'clinical_authority_snapshot' => 'array'];
 
     /**
      * A head is an assertion nothing has superseded. Derived rather than stored
