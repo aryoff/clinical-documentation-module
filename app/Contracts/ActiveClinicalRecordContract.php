@@ -34,9 +34,52 @@ interface ActiveClinicalRecordContract
     /** @return array<string, mixed> */
     public function breakGlassRead(string $documentId, string $actorId, string $reason): array;
 
-    /** @param array<string, mixed> $command
-     *  @return array<string, mixed> */
+    /**
+     * Record a Diagnosis Assertion into the patient's append-only lineage.
+     *
+     * $command carries document_id, coding_system, code, display, assertion_type
+     * (`initial`, `supplement` or `supersession`), an optional note, an optional
+     * list of evidence_ids, and — for a supersession only — the required
+     * supersedes_assertion_id. The first assertion of a care journey must be
+     * `initial`, and a supersession may only name an assertion that is still a
+     * current head.
+     *
+     * @param array<string, mixed> $command
+     * @return array<string, mixed>
+     */
     public function assertDiagnosis(array $command, string $actorId): array;
+
+    /**
+     * The current heads only — the assertions a prescription may cite.
+     *
+     * @return array<string, mixed>
+     */
+    public function currentDiagnosisHeads(string $patientId, string $actorId, string $purpose): array;
+
+    /**
+     * The Clinical Diagnosis Read: every lineage with each revision in order and
+     * the evidence it cited. It grants no clinical document access.
+     *
+     * @return array<string, mixed>
+     */
+    public function diagnosisLineageForPatient(string $patientId, string $actorId, string $purpose): array;
+
+    /**
+     * The Clinical Diagnosis Read for a clinician taking the case over, anchored
+     * by the originating clinician's accepted handoff. Both actors are audited.
+     *
+     * @return array<string, mixed>
+     */
+    public function diagnosisLineageForTakeover(string $patientId, string $actorId, string $authorizingActorId, string $handoffId, string $purpose): array;
+
+    /**
+     * A result owner publishes an immutable finding a clinician may cite. It is
+     * never itself a diagnosis and creates no assertion.
+     *
+     * @param array<string, mixed> $command
+     * @return array<string, mixed>
+     */
+    public function recordDiagnosticResultEvidence(array $command, string $actorId): array;
 
     /** @param array<string, mixed> $command
      *  @return array<string, mixed> */

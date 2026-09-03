@@ -27,14 +27,16 @@ Three of this module's permissions are classified **clinical** in HospitalCore's
 
 ## Ownership Boundaries
 - **Authoring is handoff-gated**: Only an explicit accepted Clinical Handoff from ER, outpatient, or inpatient care permits authoring. A queue position, bed allocation, or ward roster is not authorization.
-- **Diagnoses and allergies are owned here**: Diagnosis Assertions and Allergy Assertions are this module's clinical facts. HospitalCore supplies only the ICD vocabulary; it is not the diagnosis record owner. Do not write `hc_visit_diagnoses` through `HospitalCore\DiagnosisService`.
+- **Diagnoses and allergies are owned here**: Diagnosis Assertions and Allergy Assertions are this module's clinical facts. HospitalCore supplies only the ICD vocabulary; it is not the diagnosis record owner. `hc_visit_diagnoses` and `HospitalCore\DiagnosisService` were retired by #255 and must not come back.
+- **Only this module asserts**: Laboratory and Radiology publish Diagnostic Result Evidence through `recordDiagnosticResultEvidence()` and cite nothing on a clinician's behalf. No other module may reach `DiagnosisAssertion` or `assertDiagnosis`; an architecture test enforces it.
 - **EPrescription is independent**: No embedded `PrescriptionPanel`, no `soap_note_id` foreign key. Link prescriptions through the public Clinical Rationale Reference; urgent prescribing must work with no clinical document.
 - **MedicalRecords is optional**: It is a ciphertext-only vault. This module is the sole key holder, encrypts before upload, holds the archive manifest, and authorizes each bounded one-patient release. Archive unavailability must never block discharge.
 - **No billing from signing**: Signing a document, diagnosis, or allergy never creates a Billable Service Fact. Ancillary providers own their own orders, results, and charges.
 
 ## Clinical Audit Standards
 - **Access-as-Event (Log-on-Read)**: Every "Read" operation on a clinical document must be logged.
-- **Addendum-Only Immutability**: Once a clinical document is signed, it is immutable. Corrections must be created as linked `ClinicalAddendum` records that preserve the original. There is no `superseded` state.
+- **Addendum-Only Immutability**: Once a clinical document is signed, it is immutable. Corrections must be created as linked `ClinicalAddendum` records that preserve the original. A *document* has no `superseded` state.
+- **Diagnoses correct by lineage, not by edit**: a Diagnosis Assertion is immutable too, but it belongs to a lineage. A `supersession` appends a successor at the next revision of its predecessor's `lineage_id`; a `supplement` opens a parallel lineage. Head status is derived from what nothing supersedes — never store an `is_current` or `superseded_at` column, and never `update()` an assertion. See [ADR 0001](docs/adr/0001-sign-clinical-documents-and-correct-them-by-addendum.md#amended-a-diagnosis-assertion-carries-a-lineage).
 - **Template Versioning**: A signed record stays bound to the Clinical Document Template version it was signed against.
 - **Break Glass Protocol**: Unauthorized clinical access in emergencies requires a "Break Glass" action with a mandatory reason, flagged for security review. It grants neither authoring nor ongoing access.
 - **Zero-Trust Synchronization**: The Application logs the **Intent** (Request) while the vault logs the **Release**. Use a `CorrelationID` to link them.

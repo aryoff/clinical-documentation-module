@@ -13,6 +13,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
 use Modules\ClinicalDocumentation\Http\Requests\AmendClinicalDocumentRequest;
+use Modules\ClinicalDocumentation\Http\Requests\AssertDiagnosisRequest;
 use Modules\ClinicalDocumentation\Http\Requests\BreakGlassFormRequest;
 use Modules\ClinicalDocumentation\Http\Requests\BreakGlassRequest;
 use Modules\ClinicalDocumentation\Http\Requests\CreateClinicalDocumentRequest;
@@ -25,6 +26,7 @@ use Modules\ClinicalDocumentation\Http\Requests\SignClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\StoreClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\UpdateClinicalDocumentRequest;
 use Modules\ClinicalDocumentation\Http\Requests\ViewClinicalDocumentRequest;
+use Modules\ClinicalDocumentation\Http\Requests\ViewDiagnosisLineageRequest;
 use Modules\ClinicalDocumentation\Http\Requests\ViewClinicalAuditRequest;
 use Modules\ClinicalDocumentation\Http\Requests\ViewClinicalDocumentsRequest;
 use Modules\ClinicalDocumentation\Http\Requests\StagePresentedExternalEvidenceRequest;
@@ -149,13 +151,23 @@ class ClinicalDocumentationController extends Controller
             throw $exception;
         }
 
+        $actorId = (string) $request->user()->id;
+        $isAuthor = ClinicalDocument::query()->whereKey($id)->where('author_id', $actorId)->exists();
+
         return Inertia::render('ClinicalDocumentation::Show', [
             'document' => $document,
             'immutabilityNotice' => $request->session()->get(self::IMMUTABLE_NOTICE_KEY),
             // The permission alone does not earn the button: archive custody is
             // author-scoped, so offering it to a non-author would only 403.
-            'canArchive' => $request->mayRequestArchive()
-                && ClinicalDocument::query()->whereKey($id)->where('author_id', (string) $request->user()->id)->exists(),
+            'canArchive' => $request->mayRequestArchive() && $isAuthor,
+            // Naming a diagnosis is the author's act against their own signed
+            // document, so a reader sees the lineage and is offered no form.
+            'canAssertDiagnosis' => $isAuthor && $document['status'] === 'signed',
+            'diagnoses' => $this->records->diagnosisLineageForPatient(
+                (string) $document['patient_id'],
+                $actorId,
+                'clinical-record-review',
+            ),
         ]);
     }
 
@@ -262,6 +274,35 @@ class ClinicalDocumentationController extends Controller
 
         return redirect()->route('clinicaldocumentation.show', $id)
             ->with('success', "Archive package requested; custody is {$package['custody_state']}.");
+    }
+
+    public function assertDiagnosis(AssertDiagnosisRequest $request, string $id): RedirectResponse
+    {
+        $command = $request->validated();
+        $command['document_id'] = $id;
+
+        // The lineage rules are the service's, and a clinician meets them at a
+        // form rather than at a stack trace: an already-superseded predecessor
+        // or a second initial is a refusal on the page they are looking at.
+        try {
+            $assertion = $this->records->assertDiagnosis($command, (string) $request->user()->id);
+        } catch (\LogicException|\InvalidArgumentException $exception) {
+            return back()->withErrors(['code' => $exception->getMessage()]);
+        }
+
+        return redirect()->route('clinicaldocumentation.show', $id)
+            ->with('success', "Diagnosis {$assertion['code']} recorded as {$assertion['assertion_type']} revision {$assertion['revision']}.");
+    }
+
+    public function diagnoses(ViewDiagnosisLineageRequest $request, string $patient): Response
+    {
+        return Inertia::render('ClinicalDocumentation::Diagnoses', [
+            'lineage' => $this->records->diagnosisLineageForPatient(
+                $patient,
+                (string) $request->user()->id,
+                'clinical-diagnosis-review',
+            ),
+        ]);
     }
 
     public function audit(ViewClinicalAuditRequest $request): Response

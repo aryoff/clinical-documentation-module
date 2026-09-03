@@ -43,6 +43,39 @@ Assertions are likewise owned here as structured facts with substance,
 reaction, severity, verifier, and active state — the Patient Registry is not
 their source, and registration, billing, and ward paths cannot edit them.
 
+### Amended: a Diagnosis Assertion carries a lineage
+
+*Amended on [#255](https://github.com/aryoff/boilerplate-laravel-react/issues/255).*
+
+A diagnosis moves during a stay. The admitting impression narrows once a result
+comes back, and a three-day inpatient course routinely ends on a different code
+than it started on. The original text left only two ways to record that, and
+both are wrong: assert a second unrelated fact, which reads as two concurrent
+diseases, or edit the first, which this context forbids.
+
+A Diagnosis Assertion therefore belongs to a **lineage**. A `supersession`
+appends a successor assertion carrying its predecessor's `lineage_id` at the
+next revision; a `supplement` opens a *parallel* lineage, because a genuinely
+second diagnosis is a new fact rather than a correction. Nothing is edited and
+nothing is deleted, and an assertion's head status is **derived** — an assertion
+is current when nothing supersedes it — so there is no stored `superseded` flag
+to drift from the facts.
+
+This is not the `draft → submitted → superseded` document model this decision
+rejected, and the distinction is the whole point. That model demoted a signed
+*document* so that a reader could no longer tell what the author knew when they
+signed it. Here every assertion stays readable at full fidelity with its author,
+its time, and the evidence it cited; the lineage adds the one thing the addendum
+chain could not express, which is *which* earlier fact a later fact corrects.
+The Clinical Diagnosis Read returns each lineage in revision order for exactly
+that reason.
+
+A clinician cites evidence rather than being handed a diagnosis by a machine.
+**Diagnostic Result Evidence** is an immutable finding published by a result
+owner — Laboratory, Radiology — that an assertion may cite. Recording evidence
+is never itself asserting: no ancillary module creates, supplements, or
+supersedes a Diagnosis Assertion.
+
 Signing a document, diagnosis, or allergy never creates a Billable Service
 Fact. An ancillary provider owns its own order, execution, result, and charge,
 and may cite a signed rationale as Clinical Evidence. Clinical Consumable

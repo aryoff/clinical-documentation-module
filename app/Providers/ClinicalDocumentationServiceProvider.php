@@ -5,6 +5,7 @@ namespace Modules\ClinicalDocumentation\Providers;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
+use Modules\ClinicalDocumentation\Contracts\DiagnosisAssertionFactPublisher;
 use Modules\ClinicalDocumentation\Contracts\DischargeDocumentationContract;
 use Modules\ClinicalDocumentation\Contracts\HospitalRegistrationPort;
 use Modules\ClinicalDocumentation\Services\ActiveClinicalRecordService;
@@ -43,6 +44,10 @@ class ClinicalDocumentationServiceProvider extends ServiceProvider
         // consumer is different: a ward asks whether an episode's paperwork is
         // finished and must never be able to read what the paperwork says.
         $this->app->singleton(DischargeDocumentationContract::class, DischargeDocumentationService::class);
+        // Integrations receive the diagnosis as a scalar snapshot rather than
+        // by reading this module's storage, so a queued external submission
+        // keeps the meaning it captured even after a later supersession.
+        $this->app->singleton(DiagnosisAssertionFactPublisher::class, \Modules\ClinicalDocumentation\Services\DiagnosisAssertionFactPublisher::class);
         $this->app->scoped(HospitalRegistrationPort::class, CapabilityHospitalRegistration::class);
     }
 

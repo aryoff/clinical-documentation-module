@@ -1,6 +1,6 @@
 import { Head, Link, router } from "@inertiajs/react";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
-import { Archive, FileLock2, History, ShieldCheck } from "lucide-react";
+import { Archive, FileLock2, History, ShieldCheck, Stethoscope } from "lucide-react";
 import { type ActionBarHandle } from "@/Components/ActionBar";
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { Badge } from "@/Components/ui/badge";
@@ -11,6 +11,7 @@ import { Label } from "@/Components/ui/label";
 import { Textarea } from "@/Components/ui/textarea";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout/AuthenticatedLayout";
 import Content from "@/Layouts/AuthenticatedLayout/Components/Content";
+import { type DiagnosisLineage, DiagnosisLineageView, selectClasses } from "../Components/DiagnosisLineage";
 
 const openAddendumPanel = "clinicaldocumentation:open-addendum-panel";
 
@@ -23,7 +24,92 @@ type Document = {
     encountered_at: string;
     signed_at: string | null;
 };
-type ShowProps = { document: Document; immutabilityNotice?: string | null; canArchive?: boolean };
+type ShowProps = {
+    document: Document;
+    immutabilityNotice?: string | null;
+    canArchive?: boolean;
+    canAssertDiagnosis?: boolean;
+    diagnoses: DiagnosisLineage;
+};
+
+/**
+ * Naming the diagnosis is a separate act from signing the note, and it appends
+ * rather than edits: an `initial` opens the care journey, a `supplement` adds a
+ * second concurrent finding, and a `supersession` corrects one that is still
+ * current. The supersession target list therefore offers heads only — a
+ * revision that has already been corrected is not a thing to correct again.
+ */
+function DiagnosisPanel({ document, diagnoses, canAssert }: { document: Document; diagnoses: DiagnosisLineage; canAssert: boolean }) {
+    const heads = diagnoses.current;
+    const [chosenType, setChosenType] = useState("initial");
+    // Derived, not merely initialised. Which kinds are on offer depends on
+    // whether a head exists, and that changes underneath this component the
+    // moment the first assertion lands. A state value left holding `initial`
+    // would select an option that is no longer rendered — a blank control that
+    // submits a refusal.
+    const assertionType = heads.length === 0
+        ? "initial"
+        : chosenType === "initial" ? "supersession" : chosenType;
+    const [code, setCode] = useState("");
+    const [display, setDisplay] = useState("");
+    const [note, setNote] = useState("");
+    const [supersedes, setSupersedes] = useState("");
+
+    const assert = (event: FormEvent) => {
+        event.preventDefault();
+        router.post(route("clinicaldocumentation.diagnoses.assert", document.document_id), {
+            coding_system: "ICD-10",
+            code,
+            display,
+            assertion_type: assertionType,
+            note: note === "" ? null : note,
+            supersedes_assertion_id: assertionType === "supersession" ? supersedes : null,
+        });
+    };
+
+    return <Card className="mt-4" id="diagnosis_panel">
+        <CardHeader>
+            <Stethoscope className="size-5 text-primary" />
+            <CardTitle className="text-base">Diagnosis</CardTitle>
+            <CardDescription>What this signed document concluded. Each entry is appended; nothing here is ever edited or deleted.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+            <DiagnosisLineageView lineage={diagnoses} />
+            {canAssert && <form className="grid gap-4 border-t pt-6 md:grid-cols-2" onSubmit={assert}>
+                <div className="space-y-2">
+                    <Label htmlFor="assertion_type">Kind of assertion</Label>
+                    <select id="assertion_type" className={selectClasses} value={assertionType} onChange={(event) => setChosenType(event.target.value)}>
+                        {heads.length === 0 && <option value="initial">Initial diagnosis</option>}
+                        {heads.length > 0 && <option value="supplement">Additional diagnosis</option>}
+                        {heads.length > 0 && <option value="supersession">Correct a current diagnosis</option>}
+                    </select>
+                </div>
+                {assertionType === "supersession" && <div className="space-y-2">
+                    <Label htmlFor="supersedes_assertion_id">Diagnosis being corrected</Label>
+                    <select id="supersedes_assertion_id" className={selectClasses} value={supersedes} onChange={(event) => setSupersedes(event.target.value)} required>
+                        <option value="">Select the diagnosis to correct</option>
+                        {heads.map((head) => <option key={head.assertion_id} value={head.assertion_id}>{head.code} — {head.display}</option>)}
+                    </select>
+                </div>}
+                <div className="space-y-2">
+                    <Label htmlFor="diagnosis_code">ICD-10 code</Label>
+                    <Input id="diagnosis_code" required placeholder="J02.9" value={code} onChange={(event) => setCode(event.target.value)} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="diagnosis_display">Diagnosis</Label>
+                    <Input id="diagnosis_display" required placeholder="Acute pharyngitis, unspecified" value={display} onChange={(event) => setDisplay(event.target.value)} />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="diagnosis_note">Clinical reasoning (optional)</Label>
+                    <Textarea id="diagnosis_note" className="min-h-20" value={note} onChange={(event) => setNote(event.target.value)} />
+                </div>
+                <div className="md:col-span-2">
+                    <Button id="record_diagnosis" className="w-full">Record diagnosis</Button>
+                </div>
+            </form>}
+        </CardContent>
+    </Card>;
+}
 
 function AddendumActionBar({ document }: Pick<ShowProps, "document">) {
     const [reason, setReason] = useState("");
@@ -82,7 +168,7 @@ function ShowLayout({ page, document }: { page: ReactNode; document: Document })
     </AuthenticatedLayout>;
 }
 
-const Show = ({ document, immutabilityNotice, canArchive }: ShowProps) => <>
+const Show = ({ document, immutabilityNotice, canArchive, canAssertDiagnosis, diagnoses }: ShowProps) => <>
     <Head title="Clinical document" />
     {immutabilityNotice && <Alert className="mb-6">
         <FileLock2 className="size-4" />
@@ -102,6 +188,9 @@ const Show = ({ document, immutabilityNotice, canArchive }: ShowProps) => <>
             {canArchive && <Button variant="outline" onClick={() => router.post(route("clinicaldocumentation.archive", document.document_id))}>
                 <Archive className="mr-1 size-4" />Request archive
             </Button>}
+            {route().has("clinicaldocumentation.diagnoses.index") && <Button asChild variant="outline">
+                <Link href={route("clinicaldocumentation.diagnoses.index", diagnoses.patient_id)}>Diagnosis history</Link>
+            </Button>}
             {route().has("clinicaldocumentation.amend") && <Button onClick={() => window.dispatchEvent(new Event(openAddendumPanel))}>Add addendum</Button>}
         </div>
     </div>
@@ -117,6 +206,7 @@ const Show = ({ document, immutabilityNotice, canArchive }: ShowProps) => <>
         </CardHeader>
         <CardContent><pre className="overflow-auto rounded-md border bg-muted/40 p-4 text-sm">{JSON.stringify(document.payload, null, 2)}</pre></CardContent>
     </Card>
+    <DiagnosisPanel document={document} diagnoses={diagnoses} canAssert={canAssertDiagnosis === true && route().has("clinicaldocumentation.diagnoses.assert")} />
     <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Card><CardHeader><ShieldCheck className="size-5 text-primary" /><CardTitle className="text-base">Immutable source</CardTitle><CardDescription>Access, emergency use, and future addenda preserve accountable evidence.</CardDescription></CardHeader></Card>
         <Card><CardHeader><History className="size-5 text-primary" /><CardTitle className="text-base">Correction history</CardTitle><CardDescription>Use the action panel to add a reasoned record without changing this document.</CardDescription></CardHeader></Card>

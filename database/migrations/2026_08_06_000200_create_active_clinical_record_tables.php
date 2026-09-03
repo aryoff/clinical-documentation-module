@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -58,19 +59,59 @@ return new class extends Migration
             $table->index(['document_id', 'signed_at']);
         });
 
+        // A Diagnosis Assertion is never edited. A correction is a successor
+        // assertion carrying the same `lineage_id`, and the lineage's head is
+        // derived from what nothing supersedes rather than stored, so there is
+        // deliberately no `is_current` or `superseded_at` column to fall out of
+        // step with the facts.
         Schema::create('cd_diagnosis_assertions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->uuid('lineage_id')->index();
             $table->uuid('document_id')->index();
+            $table->uuid('registration_id')->nullable()->index();
             $table->uuid('patient_id')->index();
             $table->string('coding_system');
             $table->string('code');
             $table->string('display');
+            // initial | supplement | supersession
             $table->string('assertion_type');
+            $table->unsignedInteger('revision')->default(1);
+            $table->uuid('supersedes_assertion_id')->nullable();
+            $table->json('evidence_refs')->nullable();
             $table->text('note')->nullable();
             $table->uuid('asserted_by')->index();
             $table->string('asserted_by_name');
             $table->timestamp('asserted_at')->useCurrent();
             $table->index(['patient_id', 'asserted_at']);
+            $table->index(['lineage_id', 'revision']);
+            // One successor per predecessor, so a lineage cannot fork.
+            $table->unique('supersedes_assertion_id');
+        });
+        // A care journey opens once. The service checks this too, but its
+        // `SELECT ... FOR UPDATE` has no rows to lock on a journey that has
+        // none yet, so two simultaneous first assertions would both pass it.
+        DB::statement('create unique index cd_diagnosis_assertions_one_initial_per_journey on cd_diagnosis_assertions (registration_id) where assertion_type = \'initial\'');
+
+        // Diagnostic Result Evidence is published by a result owner (Laboratory,
+        // Radiology) and cited by a clinician's assertion. Recording evidence is
+        // never itself a diagnosis: only ClinicalDocumentation asserts.
+        Schema::create('cd_diagnostic_result_evidence', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('patient_id')->index();
+            $table->uuid('registration_id')->nullable()->index();
+            // laboratory | radiology
+            $table->string('source_owner');
+            $table->uuid('result_reference_id')->index();
+            $table->string('coding_system');
+            $table->string('code');
+            $table->string('display');
+            $table->text('summary')->nullable();
+            $table->timestamp('observed_at');
+            $table->uuid('released_by')->index();
+            $table->string('released_by_name');
+            $table->timestamp('recorded_at')->useCurrent();
+            $table->index(['patient_id', 'observed_at']);
+            $table->index(['source_owner', 'result_reference_id']);
         });
 
         Schema::create('cd_allergy_assertions', function (Blueprint $table): void {
@@ -125,6 +166,7 @@ return new class extends Migration
         Schema::dropIfExists('cd_archive_packages');
         Schema::dropIfExists('cd_clinical_audit_events');
         Schema::dropIfExists('cd_allergy_assertions');
+        Schema::dropIfExists('cd_diagnostic_result_evidence');
         Schema::dropIfExists('cd_diagnosis_assertions');
         Schema::dropIfExists('cd_clinical_addenda');
         Schema::dropIfExists('cd_clinical_documents');

@@ -57,6 +57,19 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/clinical-documentation/{id}/archive', [ClinicalDocumentationController::class, 'archive'])
         ->name('clinicaldocumentation.archive');
 
+    // Name what the signed document concluded. Appended to the patient's
+    // diagnosis lineage; never an edit of an existing assertion. Gated by
+    // AssertDiagnosisRequest::authorize() so the Show page's form disappears
+    // for an account that cannot author.
+    Route::post('/clinical-documentation/{id}/diagnoses', [ClinicalDocumentationController::class, 'assertDiagnosis'])
+        ->name('clinicaldocumentation.diagnoses.assert');
+
+    // The Clinical Diagnosis Read: what was concluded and when it changed,
+    // without the signed notes behind it. Its own route because it is patient-
+    // scoped rather than document-scoped, and grants no document access.
+    Route::get('/clinical-documentation/patients/{patient}/diagnoses', [ClinicalDocumentationController::class, 'diagnoses'])
+        ->name('clinicaldocumentation.diagnoses.index');
+
     // Access-as-Event evidence, including every Break-Glass awaiting review.
     // Gated by ViewClinicalAuditRequest::authorize() rather than middleware so
     // the sidebar entry disappears for a user who cannot open it.

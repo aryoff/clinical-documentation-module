@@ -24,7 +24,7 @@
         "provides": [
             {
                 "id": "clinicaldocumentation.active-clinical-record",
-                "version": "1.0.0",
+                "version": "1.1.0",
                 "modes": [
                     "sync"
                 ],
@@ -45,6 +45,18 @@
                 },
                 "providerContractTest": "tests/Contract/DischargeDocumentationContractTest.php",
                 "binding": "Modules\\ClinicalDocumentation\\Contracts\\DischargeDocumentationContract"
+            },
+            {
+                "id": "clinicaldocumentation.diagnosis-assertion-fact",
+                "version": "1.0.0",
+                "modes": [
+                    "async"
+                ],
+                "contracts": {
+                    "async": "contracts/clinicaldocumentation.diagnosis-assertion-fact/v1/contract.md"
+                },
+                "providerContractTest": "tests/Contract/DiagnosisAssertionFactContractTest.php",
+                "binding": "Modules\\ClinicalDocumentation\\Contracts\\DiagnosisAssertionFactPublisher"
             }
         ],
         "consumes": [

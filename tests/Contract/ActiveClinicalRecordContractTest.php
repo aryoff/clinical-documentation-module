@@ -85,7 +85,7 @@ class ActiveClinicalRecordContractTest extends TestCase
             'coding_system' => 'ICD-10',
             'code' => 'R51.9',
             'display' => 'Headache, unspecified',
-            'assertion_type' => 'primary',
+            'assertion_type' => 'initial',
         ], (string) $this->clinician->id);
 
         $facts = $this->records->safetyFactsForPatient(
@@ -174,7 +174,7 @@ class ActiveClinicalRecordContractTest extends TestCase
             'coding_system' => 'free-text',
             'code' => 'headache',
             'display' => 'Headache',
-            'assertion_type' => 'primary',
+            'assertion_type' => 'initial',
         ], (string) $this->clinician->id);
     }
 

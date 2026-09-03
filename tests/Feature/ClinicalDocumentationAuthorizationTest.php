@@ -391,6 +391,90 @@ class ClinicalDocumentationAuthorizationTest extends TestCase
             );
     }
 
+    // clinicaldocumentation.documents.author (diagnosis assertion)
+
+    public function test_asserting_a_diagnosis_is_forbidden_without_the_author_permission(): void
+    {
+        $signed = $this->signedDocument();
+
+        $this->actingAs($this->clinician)
+            ->post(route('clinicaldocumentation.diagnoses.assert', $signed['document_id']), $this->diagnosisCommand())
+            ->assertForbidden();
+    }
+
+    public function test_an_authorized_author_asserts_the_initial_diagnosis_against_their_signed_document(): void
+    {
+        $this->grantClinicalAbility($this->clinician, 'clinicaldocumentation.documents.author');
+        $signed = $this->signedDocument();
+
+        $this->actingAs($this->clinician)
+            ->post(route('clinicaldocumentation.diagnoses.assert', $signed['document_id']), $this->diagnosisCommand())
+            ->assertRedirect(route('clinicaldocumentation.show', $signed['document_id']));
+
+        $this->assertDatabaseHas('cd_diagnosis_assertions', [
+            'document_id' => $signed['document_id'],
+            'code' => 'J06.9',
+            'assertion_type' => 'initial',
+            'revision' => 1,
+        ]);
+    }
+
+    public function test_a_refused_lineage_rule_answers_as_a_form_error_rather_than_a_server_error(): void
+    {
+        $this->grantClinicalAbility($this->clinician, 'clinicaldocumentation.documents.author');
+        $signed = $this->signedDocument();
+
+        // A supplement with nothing to supplement is the clinician getting
+        // ahead of themselves, not a broken page.
+        $this->actingAs($this->clinician)
+            ->post(
+                route('clinicaldocumentation.diagnoses.assert', $signed['document_id']),
+                array_merge($this->diagnosisCommand(), ['assertion_type' => 'supplement']),
+            )
+            ->assertRedirect()
+            ->assertSessionHasErrors('code');
+    }
+
+    // clinicaldocumentation.records.read (Clinical Diagnosis Read)
+
+    public function test_the_diagnosis_history_is_forbidden_without_the_read_permission(): void
+    {
+        $signed = $this->signedDocument();
+
+        $this->actingAs($this->clinician)
+            ->get(route('clinicaldocumentation.diagnoses.index', $signed['patient_id']))
+            ->assertForbidden();
+    }
+
+    public function test_a_treating_reader_reads_the_diagnosis_lineage_without_the_signed_notes(): void
+    {
+        $this->grantClinicalAbility($this->clinician, 'clinicaldocumentation.documents.author');
+        $this->clinician->givePermissionTo('clinicaldocumentation.records.read');
+        $signed = $this->signedDocument();
+        $this->records->assertDiagnosis(array_merge($this->diagnosisCommand(), ['document_id' => $signed['document_id']]), (string) $this->clinician->id);
+
+        $this->actingAs($this->clinician)
+            ->get(route('clinicaldocumentation.diagnoses.index', $signed['patient_id']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('ClinicalDocumentation::Diagnoses')
+                ->where('lineage.current.0.code', 'J06.9')
+                ->has('lineage.lineages', 1)
+                ->missing('lineage.lineages.0.assertions.0.payload')
+            );
+    }
+
+    /** @return array<string, mixed> */
+    private function diagnosisCommand(): array
+    {
+        return [
+            'coding_system' => 'ICD-10',
+            'code' => 'J06.9',
+            'display' => 'Acute upper respiratory infection, unspecified',
+            'assertion_type' => 'initial',
+        ];
+    }
+
     /** @return array<string, mixed> */
     private function handoff(): array
     {

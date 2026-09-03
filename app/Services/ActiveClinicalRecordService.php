@@ -9,6 +9,7 @@ use App\Support\CapabilityRegistry;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
+use Modules\ClinicalDocumentation\Contracts\DiagnosisAssertionFactPublisher;
 use Modules\ClinicalDocumentation\Models\AllergyAssertion;
 use Modules\ClinicalDocumentation\Models\ClinicalAddendum;
 use Modules\ClinicalDocumentation\Models\ClinicalArchivePackage;
@@ -16,13 +17,23 @@ use Modules\ClinicalDocumentation\Models\ClinicalAuditEvent;
 use Modules\ClinicalDocumentation\Models\ClinicalDocument;
 use Modules\ClinicalDocumentation\Models\ClinicalHandoff;
 use Modules\ClinicalDocumentation\Models\DiagnosisAssertion;
+use Modules\ClinicalDocumentation\Models\DiagnosticResultEvidence;
 
 class ActiveClinicalRecordService implements ActiveClinicalRecordContract
 {
     /** @var list<string> */
     private const HANDOFF_OWNERS = ['emergency', 'outpatient', 'inpatient', 'operating-room', 'obstetrics', 'physical-therapy'];
 
-    public function __construct(private readonly CapabilityRegistry $capabilities) {}
+    /** @var list<string> */
+    private const ASSERTION_TYPES = ['initial', 'supplement', 'supersession'];
+
+    /** @var list<string> */
+    private const EVIDENCE_OWNERS = ['laboratory', 'radiology'];
+
+    public function __construct(
+        private readonly CapabilityRegistry $capabilities,
+        private readonly DiagnosisAssertionFactPublisher $facts,
+    ) {}
 
     public function acceptHandoff(array $command): array
     {
@@ -225,6 +236,16 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         ]);
     }
 
+    /**
+     * Record a Diagnosis Assertion into the patient's append-only lineage.
+     *
+     * An `initial` opens the care journey's first lineage. A `supplement` opens
+     * a parallel one, because a second concurrent diagnosis is a new fact and
+     * not a correction of the first. A `supersession` continues its
+     * predecessor's lineage at the next revision, and may only name an
+     * assertion that is still a head — superseding an already-corrected fact
+     * would fork history rather than advance it.
+     */
     public function assertDiagnosis(array $command, string $actorId): array
     {
         $document = $this->signedAuthorDocument($this->requiredString($command, 'document_id'), $actorId);
@@ -234,22 +255,166 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         if ($command['coding_system'] !== 'ICD-10' || preg_match('/^[A-TV-Z][0-9]{2}(?:\.[A-Z0-9]{1,4})?$/', $command['code']) !== 1) {
             throw new \InvalidArgumentException('Diagnosis Assertions require a valid ICD-10 code snapshot.');
         }
+        $assertionType = $command['assertion_type'];
+        if (!in_array($assertionType, self::ASSERTION_TYPES, true)) {
+            throw new \InvalidArgumentException('A Diagnosis Assertion is initial, supplement, or supersession.');
+        }
+        $evidenceIds = $this->citedEvidenceIds($command, $document->patient_id);
 
-        $assertion = DiagnosisAssertion::create([
-            'document_id' => $document->id,
-            'patient_id' => $document->patient_id,
+        return DB::transaction(function () use ($assertionType, $command, $actorId, $document, $evidenceIds): array {
+            $openedJourney = DiagnosisAssertion::query()
+                ->where('registration_id', $document->registration_id)
+                ->lockForUpdate()
+                ->exists();
+
+            if ($assertionType === 'initial' && $openedJourney) {
+                throw new \LogicException('This care journey already carries an initial Diagnosis Assertion; supplement or supersede it instead.');
+            }
+            if ($assertionType !== 'initial' && !$openedJourney) {
+                throw new \LogicException('The first Diagnosis Assertion for a care journey must be an initial assertion.');
+            }
+
+            $lineageId = null;
+            $revision = 1;
+            $predecessorId = null;
+
+            if ($assertionType === 'supersession') {
+                $predecessor = $this->supersededHead($this->requiredString($command, 'supersedes_assertion_id'), $document->patient_id);
+                $lineageId = $predecessor->lineage_id;
+                $revision = $predecessor->revision + 1;
+                $predecessorId = $predecessor->id;
+            }
+
+            $assertion = DiagnosisAssertion::create([
+                'lineage_id' => $lineageId,
+                'document_id' => $document->id,
+                'registration_id' => $document->registration_id,
+                'patient_id' => $document->patient_id,
+                'coding_system' => $command['coding_system'],
+                'code' => $command['code'],
+                'display' => $command['display'],
+                'assertion_type' => $assertionType,
+                'revision' => $revision,
+                'supersedes_assertion_id' => $predecessorId,
+                'evidence_refs' => $evidenceIds === [] ? null : $evidenceIds,
+                'note' => $command['note'] ?? null,
+                'asserted_by' => $actorId,
+                'asserted_by_name' => $this->actorName($actorId),
+                'asserted_at' => now(),
+            ]);
+            $this->audit('diagnosis_asserted', $actorId, $document->patient_id, $document->id, null, null, [
+                'assertion_id' => $assertion->id,
+                'lineage_id' => $assertion->lineage_id,
+                'revision' => $assertion->revision,
+                'assertion_type' => $assertion->assertion_type,
+                'supersedes_assertion_id' => $predecessorId,
+                'evidence_ids' => $evidenceIds,
+            ]);
+
+            // Integrations learn the diagnosis here, as scalars. The snapshot
+            // is complete on purpose: a submission queued now and retried after
+            // a later supersession must still say what was true when it was
+            // asserted.
+            $this->facts->publish(array_merge($this->assertionFact($assertion), [
+                'supersedes_assertion_id' => $predecessorId,
+            ]));
+
+            return [
+                'assertion_id' => $assertion->id,
+                'lineage_id' => $assertion->lineage_id,
+                'revision' => $assertion->revision,
+                'document_id' => $document->id,
+                'patient_id' => $document->patient_id,
+                'registration_id' => $document->registration_id,
+                'code' => $assertion->code,
+                'assertion_type' => $assertion->assertion_type,
+            ];
+        });
+    }
+
+    /**
+     * The current heads only — the assertions a prescription is allowed to
+     * cite. A superseded fact stays readable through the lineage, but it can no
+     * longer justify a new order.
+     */
+    public function currentDiagnosisHeads(string $patientId, string $actorId, string $purpose): array
+    {
+        $this->assertTreatingAccess($patientId, $actorId);
+        $purpose = $this->requiredPurpose($purpose);
+        $this->audit('diagnosis_heads_read', $actorId, $patientId, null, null, $purpose);
+
+        return [
+            'patient_id' => $patientId,
+            'purpose' => $purpose,
+            'assertions' => $this->currentHeadFacts($patientId),
+        ];
+    }
+
+    /**
+     * The Clinical Diagnosis Read: every lineage, each revision in order, with
+     * the evidence each assertion cited. It grants no document access.
+     */
+    public function diagnosisLineageForPatient(string $patientId, string $actorId, string $purpose): array
+    {
+        $this->assertTreatingAccess($patientId, $actorId);
+        $purpose = $this->requiredPurpose($purpose);
+
+        return $this->diagnosisLineage($patientId, $actorId, $purpose);
+    }
+
+    /**
+     * The same read for a clinician taking the case over, anchored by the
+     * originating clinician's accepted handoff rather than by one of their own.
+     */
+    public function diagnosisLineageForTakeover(string $patientId, string $actorId, string $authorizingActorId, string $handoffId, string $purpose): array
+    {
+        $this->assertAcceptedHandoff($patientId, $authorizingActorId, $handoffId);
+        $purpose = $this->requiredPurpose($purpose);
+
+        return $this->diagnosisLineage($patientId, $actorId, $purpose, [
+            'authorized_by' => $authorizingActorId,
+            'handoff_id' => $handoffId,
+        ]);
+    }
+
+    /**
+     * A result owner publishes an immutable finding. This is evidence a
+     * clinician may cite; it is never itself a diagnosis, so it creates no
+     * assertion and opens no lineage.
+     */
+    public function recordDiagnosticResultEvidence(array $command, string $actorId): array
+    {
+        foreach (['patient_id', 'source_owner', 'result_reference_id', 'coding_system', 'code', 'display'] as $key) {
+            $this->requiredString($command, $key);
+        }
+        if (!in_array($command['source_owner'], self::EVIDENCE_OWNERS, true)) {
+            throw new \InvalidArgumentException('Diagnostic Result Evidence must come from an eligible result owner.');
+        }
+        if (($command['observed_at'] ?? null) === null) {
+            throw new \InvalidArgumentException('Diagnostic Result Evidence requires [observed_at].');
+        }
+
+        $evidence = DiagnosticResultEvidence::create([
+            'patient_id' => $command['patient_id'],
+            'registration_id' => $command['registration_id'] ?? null,
+            'source_owner' => $command['source_owner'],
+            'result_reference_id' => $command['result_reference_id'],
             'coding_system' => $command['coding_system'],
             'code' => $command['code'],
             'display' => $command['display'],
-            'assertion_type' => $command['assertion_type'],
-            'note' => $command['note'] ?? null,
-            'asserted_by' => $actorId,
-            'asserted_by_name' => $this->actorName($actorId),
-            'asserted_at' => now(),
+            'summary' => $command['summary'] ?? null,
+            'observed_at' => $command['observed_at'],
+            'released_by' => $actorId,
+            'released_by_name' => $this->actorName($actorId),
+            'recorded_at' => now(),
         ]);
-        $this->audit('diagnosis_asserted', $actorId, $document->patient_id, $document->id, null, null, ['assertion_id' => $assertion->id]);
+        $this->audit('diagnostic_result_evidence_recorded', $actorId, $evidence->patient_id, null, null, null, [
+            'evidence_id' => $evidence->id,
+            'source_owner' => $evidence->source_owner,
+            'result_reference_id' => $evidence->result_reference_id,
+        ]);
 
-        return ['assertion_id' => $assertion->id, 'document_id' => $document->id, 'patient_id' => $document->patient_id, 'code' => $assertion->code];
+        return $this->evidenceFact($evidence);
     }
 
     public function assertAllergy(array $command, string $actorId): array
@@ -320,22 +485,169 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
                 'active' => $allergy->active,
             ])
             ->all();
-        $diagnoses = DiagnosisAssertion::query()
-            ->where('patient_id', $patientId)
-            ->orderBy('asserted_at')
-            ->get()
-            ->map(fn (DiagnosisAssertion $diagnosis): array => [
-                'assertion_id' => $diagnosis->id,
-                'document_id' => $diagnosis->document_id,
-                'coding_system' => $diagnosis->coding_system,
-                'code' => $diagnosis->code,
-                'display' => $diagnosis->display,
-                'assertion_type' => $diagnosis->assertion_type,
-            ])
-            ->all();
+        // Current heads only. A superseded diagnosis is history, and history
+        // must not read as a live reason to prescribe.
+        $diagnoses = $this->currentHeadFacts($patientId);
         $this->audit('safety_facts_read', $actorId, $patientId, null, null, $purpose, $metadata);
 
         return ['patient_id' => $patientId, 'purpose' => $purpose, 'allergies' => $allergies, 'diagnoses' => $diagnoses];
+    }
+
+    /**
+     * Validate that every cited evidence id exists and belongs to this patient.
+     * Citing another patient's result would be a safety defect, not a typo.
+     *
+     * @param  array<string, mixed>  $command
+     * @return list<string>
+     */
+    private function citedEvidenceIds(array $command, string $patientId): array
+    {
+        $ids = $command['evidence_ids'] ?? [];
+        if ($ids === [] || $ids === null) {
+            return [];
+        }
+        if (!is_array($ids) || array_filter($ids, 'is_string') !== $ids) {
+            throw new \InvalidArgumentException('Diagnosis evidence citations must be a list of evidence IDs.');
+        }
+
+        $ids = array_values(array_unique($ids));
+        $found = DiagnosticResultEvidence::query()
+            ->whereKey($ids)
+            ->where('patient_id', $patientId)
+            ->pluck('id')
+            ->all();
+        if (count($found) !== count($ids)) {
+            throw new \InvalidArgumentException('A Diagnosis Assertion may only cite Diagnostic Result Evidence recorded for the same patient.');
+        }
+
+        return $ids;
+    }
+
+    /** The predecessor a supersession may continue: this patient's, and still a head. */
+    private function supersededHead(string $assertionId, string $patientId): DiagnosisAssertion
+    {
+        $predecessor = DiagnosisAssertion::query()
+            ->whereKey($assertionId)
+            ->where('patient_id', $patientId)
+            ->first();
+        if ($predecessor === null) {
+            throw new \InvalidArgumentException('The superseded Diagnosis Assertion does not belong to this patient.');
+        }
+        if (DiagnosisAssertion::query()->where('supersedes_assertion_id', $predecessor->id)->exists()) {
+            throw new \LogicException('That Diagnosis Assertion has already been superseded; supersede the current one instead.');
+        }
+
+        return $predecessor;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function currentHeadFacts(string $patientId): array
+    {
+        return DiagnosisAssertion::query()
+            ->where('patient_id', $patientId)
+            ->currentHeads()
+            ->orderBy('asserted_at')
+            ->get()
+            ->map(fn (DiagnosisAssertion $diagnosis): array => $this->assertionFact($diagnosis))
+            ->all();
+    }
+
+    /** @param array<string, mixed> $metadata */
+    private function diagnosisLineage(string $patientId, string $actorId, string $purpose, array $metadata = []): array
+    {
+        $assertions = DiagnosisAssertion::query()
+            ->where('patient_id', $patientId)
+            ->orderBy('asserted_at')
+            ->get();
+
+        $successorOf = $assertions
+            ->filter(fn (DiagnosisAssertion $assertion): bool => $assertion->supersedes_assertion_id !== null)
+            ->mapWithKeys(fn (DiagnosisAssertion $assertion): array => [$assertion->supersedes_assertion_id => $assertion->id])
+            ->all();
+
+        $evidence = $this->evidenceFactsById($assertions->pluck('evidence_refs')->filter()->flatten()->unique()->values()->all());
+
+        $lineages = $assertions
+            ->groupBy('lineage_id')
+            ->map(fn ($group, string $lineageId): array => [
+                'lineage_id' => $lineageId,
+                'assertions' => $group
+                    ->sortBy('revision')
+                    ->values()
+                    ->map(fn (DiagnosisAssertion $assertion): array => array_merge($this->assertionFact($assertion), [
+                        'is_current' => !isset($successorOf[$assertion->id]),
+                        'supersedes_assertion_id' => $assertion->supersedes_assertion_id,
+                        'superseded_by' => $successorOf[$assertion->id] ?? null,
+                        'evidence' => array_values(array_intersect_key($evidence, array_flip($assertion->evidence_refs ?? []))),
+                    ]))
+                    ->all(),
+            ])
+            ->values()
+            ->all();
+
+        $this->audit('diagnosis_lineage_read', $actorId, $patientId, null, null, $purpose, $metadata);
+
+        return [
+            'patient_id' => $patientId,
+            'purpose' => $purpose,
+            'current' => $this->currentHeadFacts($patientId),
+            'lineages' => $lineages,
+        ];
+    }
+
+    /**
+     * @param  list<string>  $ids
+     * @return array<string, array<string, mixed>>
+     */
+    private function evidenceFactsById(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return DiagnosticResultEvidence::query()
+            ->whereKey($ids)
+            ->orderBy('observed_at')
+            ->get()
+            ->mapWithKeys(fn (DiagnosticResultEvidence $evidence): array => [$evidence->id => $this->evidenceFact($evidence)])
+            ->all();
+    }
+
+    /** @return array<string, mixed> */
+    private function assertionFact(DiagnosisAssertion $assertion): array
+    {
+        return [
+            'assertion_id' => $assertion->id,
+            'lineage_id' => $assertion->lineage_id,
+            'revision' => $assertion->revision,
+            'document_id' => $assertion->document_id,
+            'registration_id' => $assertion->registration_id,
+            'patient_id' => $assertion->patient_id,
+            'coding_system' => $assertion->coding_system,
+            'code' => $assertion->code,
+            'display' => $assertion->display,
+            'assertion_type' => $assertion->assertion_type,
+            'note' => $assertion->note,
+            'asserted_by' => $assertion->asserted_by,
+            'asserted_by_name' => $assertion->asserted_by_name,
+            'asserted_at' => $assertion->asserted_at->toAtomString(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function evidenceFact(DiagnosticResultEvidence $evidence): array
+    {
+        return [
+            'evidence_id' => $evidence->id,
+            'source_owner' => $evidence->source_owner,
+            'result_reference_id' => $evidence->result_reference_id,
+            'coding_system' => $evidence->coding_system,
+            'code' => $evidence->code,
+            'display' => $evidence->display,
+            'summary' => $evidence->summary,
+            'observed_at' => $evidence->observed_at->toAtomString(),
+            'released_by' => $evidence->released_by,
+        ];
     }
 
     public function archiveDocument(string $documentId, string $actorId): array

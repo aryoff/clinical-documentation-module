@@ -1,6 +1,6 @@
 # Capability contract: `clinicaldocumentation.active-clinical-record` v1
 
-**Owner:** ClinicalDocumentation · **Interaction mode:** `sync` · **Version:** 1.0.0
+**Owner:** ClinicalDocumentation · **Interaction mode:** `sync` · **Version:** 1.1.0
 
 ClinicalDocumentation alone owns signed clinical content, signed addenda,
 Diagnosis Assertions, Allergy Assertions, clinical access evidence, and archive
@@ -32,12 +32,40 @@ Hospital Registration IDs, and Patient Registry IDs are UUID strings.
   author-private. `breakGlassRead` requires an emergency reason, records a
   correlation ID and security-review flag, and grants no authoring right.
 - `assertDiagnosis` accepts an ICD-vocabulary snapshot (`coding_system`,
-  `code`, `display`) cited to a signed document. `assertAllergy` requires
+  `code`, `display`) cited to a signed document, together with an
+  `assertion_type` of `initial`, `supplement`, or `supersession` and an optional
+  list of `evidence_ids`. The first assertion of a care journey must be
+  `initial`; a `supplement` opens a parallel lineage; a `supersession` requires
+  `supersedes_assertion_id` and may only name an assertion that is still a
+  current head. It returns `assertion_id`, `lineage_id`, `revision`,
+  `document_id`, `patient_id`, `registration_id`, `code`, and `assertion_type`.
+  Assertions are appended, never edited or deleted. `assertAllergy` requires
   substance, reaction, severity, verification status, and active state. Both
   are immutable ClinicalDocumentation facts and never create a charge.
+- `currentDiagnosisHeads(patientId, actorId, purpose)` returns
+  `patient_id`, `purpose`, and `assertions` — the current heads only. These are
+  the assertions a prescription is permitted to cite. A superseded fact is
+  history and cannot justify a new order.
+- `diagnosisLineageForPatient(patientId, actorId, purpose)` is the Clinical
+  Diagnosis Read. It returns `patient_id`, `purpose`, `current` (every
+  lineage's head), and `lineages` — each `lineage_id` with its assertions in
+  revision order, every assertion carrying `is_current`,
+  `supersedes_assertion_id`, `superseded_by`, and the `evidence` it cited. It
+  grants no clinical document access.
+  `diagnosisLineageForTakeover(patientId, actorId, authorizingActorId,
+  handoffId, purpose)` returns the same read to a clinician taking the case
+  over, anchored by the originating clinician's accepted handoff. Both actors
+  are audited.
+- `recordDiagnosticResultEvidence(command, actorId)` lets a result owner
+  (`laboratory` or `radiology`) publish an immutable finding: `patient_id`,
+  optional `registration_id`, `source_owner`, `result_reference_id`,
+  `coding_system`, `code`, `display`, optional `summary`, and `observed_at`.
+  It returns an evidence fact and **creates no assertion**. Only
+  ClinicalDocumentation asserts a diagnosis.
 - `safetyFactsForPatient(patientId, actorId, purpose)` returns the caller's
   purpose-scoped Allergy and Diagnosis Assertions only when the caller holds an
-  accepted treatment handoff. Every read is audited.
+  accepted treatment handoff. Its `diagnoses` key carries **current heads
+  only**, in the full assertion-fact shape. Every read is audited.
 - `archiveDocument` records a local integrity package and archive intent. When
   `medicalrecords.ciphertext-vault` is unavailable it returns
   `custody_state: local_retention`; discharge is never blocked. A resolved vault
@@ -57,3 +85,9 @@ Consumers declare `^1.0` and may rely only on documented request/response
 keys. v1 adds fields and operations compatibly; weakening immutability,
 handoff-gated authoring, reasoned Break-Glass, or purpose-scoped reads requires
 a new major version.
+
+**1.1.0** adds the diagnosis lineage additively: `currentDiagnosisHeads`,
+`diagnosisLineageForPatient`, `diagnosisLineageForTakeover`, and
+`recordDiagnosticResultEvidence`, plus lineage fields on `assertDiagnosis`. A
+consumer that requires a prescription to cite a current diagnosis head declares
+`^1.1`.
