@@ -8,9 +8,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Str;
+use Modules\ClinicalDocumentation\Models\Concerns\RefilesUnderCanonicalPatient;
 
 class DiagnosisAssertion extends Model
 {
+    use RefilesUnderCanonicalPatient;
+
     public $timestamps = false;
 
     protected $keyType = 'string';

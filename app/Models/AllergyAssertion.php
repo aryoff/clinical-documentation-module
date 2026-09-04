@@ -6,9 +6,12 @@ namespace Modules\ClinicalDocumentation\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Modules\ClinicalDocumentation\Models\Concerns\RefilesUnderCanonicalPatient;
 
 class AllergyAssertion extends Model
 {
+    use RefilesUnderCanonicalPatient;
+
     public $timestamps = false;
 
     protected $keyType = 'string';

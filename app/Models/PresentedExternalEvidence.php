@@ -7,6 +7,7 @@ namespace Modules\ClinicalDocumentation\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Modules\ClinicalDocumentation\Models\Concerns\RefilesUnderCanonicalPatient;
 
 /**
  * Custody record for a patient-provided external file.
@@ -16,6 +17,8 @@ use Illuminate\Support\Str;
  */
 class PresentedExternalEvidence extends Model
 {
+    use RefilesUnderCanonicalPatient;
+
     protected $keyType = 'string';
 
     public $incrementing = false;

@@ -6,9 +6,12 @@ namespace Modules\ClinicalDocumentation\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Modules\ClinicalDocumentation\Models\Concerns\RefilesUnderCanonicalPatient;
 
 class ClinicalDocument extends Model
 {
+    use RefilesUnderCanonicalPatient;
+
     protected $keyType = 'string';
 
     public $incrementing = false;

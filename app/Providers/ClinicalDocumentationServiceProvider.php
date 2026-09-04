@@ -3,11 +3,13 @@
 namespace Modules\ClinicalDocumentation\Providers;
 
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
 use Modules\ClinicalDocumentation\Contracts\DiagnosisAssertionFactPublisher;
 use Modules\ClinicalDocumentation\Contracts\DischargeDocumentationContract;
 use Modules\ClinicalDocumentation\Contracts\HospitalRegistrationPort;
+use Modules\ClinicalDocumentation\Listeners\ReassignReconciledPatient;
 use Modules\ClinicalDocumentation\Services\ActiveClinicalRecordService;
 use Modules\ClinicalDocumentation\Services\DischargeDocumentationService;
 use Modules\ClinicalDocumentation\Services\Capabilities\CapabilityHospitalRegistration;
@@ -17,6 +19,15 @@ class ClinicalDocumentationServiceProvider extends ServiceProvider
     protected string $moduleName = 'ClinicalDocumentation';
 
     protected string $moduleNameLower = 'clinicaldocumentation';
+
+    /**
+     * The `hospitalcore.patient-identity-reconciled` fact this module subscribes to.
+     *
+     * Named by value rather than by importing the publisher's event class,
+     * which would be a compile-time dependency on a collaborator this module
+     * does not require.
+     */
+    private const PATIENT_RECONCILED_FACT = 'hospitalcore.patient-identity-reconciled';
 
     /**
      * Boot the application events.
@@ -29,6 +40,12 @@ class ClinicalDocumentationServiceProvider extends ServiceProvider
         $this->registerConfig();
         $this->registerViews();
         $this->loadMigrationsFrom(module_path($this->moduleName, 'database/migrations'));
+
+        // A patient registry is optional. The fact is a named string on a
+        // public async contract, so this module ships no registry import and
+        // the listener is simply never called in a composition that publishes
+        // nothing under this name.
+        Event::listen(self::PATIENT_RECONCILED_FACT, [ReassignReconciledPatient::class, 'handle']);
     }
 
     /**
