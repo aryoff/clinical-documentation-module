@@ -7,7 +7,10 @@ use Illuminate\Support\Str;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
 use Modules\ClinicalDocumentation\Models\ClinicalAddendum;
 use Modules\ClinicalDocumentation\Models\ClinicalDocument;
+use Modules\ClinicalDocumentation\Tests\Support\CredentialsClinicalActors;
 use Spatie\Permission\Models\Permission;
+
+uses(CredentialsClinicalActors::class);
 
 /**
  * Clinical authoring depends materially on browser behaviour: the payload is
@@ -24,14 +27,20 @@ test('a clinician drafts, signs, is refused an edit, and records an addendum', f
         'password' => bcrypt('password'),
     ]);
 
+    Permission::findOrCreate('clinicaldocumentation.records.read');
+    $clinician->givePermissionTo('clinicaldocumentation.records.read');
+
+    // Authoring, signing and amending are Clinical Authorities. `Gate::before`
+    // refuses each of them on the permission alone, so a clinician granted only
+    // the permission is turned away at `/clinicaldocumentation/create` and never
+    // reaches the workspace this drives.
     foreach ([
-        'clinicaldocumentation.records.read',
         'clinicaldocumentation.documents.author',
         'clinicaldocumentation.documents.sign',
         'clinicaldocumentation.documents.amend',
-    ] as $permission) {
-        Permission::findOrCreate($permission);
-        $clinician->givePermissionTo($permission);
+    ] as $ability) {
+        Permission::findOrCreate($ability);
+        $this->grantClinicalAbility($clinician, $ability);
     }
 
     // Authoring is handoff-gated, and no care context accepts a handoff through
