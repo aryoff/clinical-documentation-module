@@ -17,7 +17,7 @@ class ClinicalAuditEvent extends Model
 
     protected $table = 'cd_clinical_audit_events';
 
-    protected $fillable = ['patient_id', 'document_id', 'addendum_id', 'subject_type', 'subject_id', 'action', 'actor_id', 'causer_id', 'actor_name', 'reason', 'correlation_id', 'metadata', 'occurred_at'];
+    protected $fillable = ['id', 'patient_id', 'document_id', 'addendum_id', 'subject_type', 'subject_id', 'action', 'actor_id', 'causer_id', 'actor_name', 'reason', 'correlation_id', 'metadata', 'occurred_at'];
 
     protected $casts = ['metadata' => 'array', 'occurred_at' => 'datetime'];
 

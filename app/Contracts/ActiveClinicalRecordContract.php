@@ -31,8 +31,17 @@ interface ActiveClinicalRecordContract
     /** @return array<string, mixed> */
     public function readDocument(string $documentId, string $actorId, string $purpose): array;
 
-    /** @return array<string, mixed> */
-    public function breakGlassRead(string $documentId, string $actorId, string $reason): array;
+    /**
+     * Emergency access to one signed document.
+     *
+     * `$correlationId` joins an emergency another context has already opened,
+     * so the facility's one review queue can show a ward's episode access and
+     * the document access that followed it as the single emergency they were.
+     * Omitting it mints a new one, returned as `correlation_id`.
+     *
+     * @return array<string, mixed>
+     */
+    public function breakGlassRead(string $documentId, string $actorId, string $reason, ?string $correlationId = null): array;
 
     /**
      * Record a Diagnosis Assertion into the patient's append-only lineage.

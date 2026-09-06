@@ -248,7 +248,12 @@ class ClinicalDocumentationController extends Controller
     public function breakGlass(BreakGlassRequest $request, string $id): Response
     {
         $command = $request->validated();
-        $document = $this->records->breakGlassRead($id, (string) $request->user()->id, $command['reason']);
+        $document = $this->records->breakGlassRead(
+            $id,
+            (string) $request->user()->id,
+            $command['reason'],
+            $command['correlation_id'] ?? null,
+        );
 
         // The emergency read is audited once. Inertia keeps page props in
         // history state, so without this the responder could press Back and

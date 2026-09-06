@@ -8,10 +8,12 @@ use Illuminate\Support\ServiceProvider;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
 use Modules\ClinicalDocumentation\Contracts\DiagnosisAssertionFactPublisher;
 use Modules\ClinicalDocumentation\Contracts\DischargeDocumentationContract;
+use Modules\ClinicalDocumentation\Contracts\EmergencyAccessReviewPort;
 use Modules\ClinicalDocumentation\Contracts\HospitalRegistrationPort;
 use Modules\ClinicalDocumentation\Listeners\ReassignReconciledPatient;
 use Modules\ClinicalDocumentation\Services\ActiveClinicalRecordService;
 use Modules\ClinicalDocumentation\Services\DischargeDocumentationService;
+use Modules\ClinicalDocumentation\Services\Capabilities\CapabilityEmergencyAccessReview;
 use Modules\ClinicalDocumentation\Services\Capabilities\CapabilityHospitalRegistration;
 
 class ClinicalDocumentationServiceProvider extends ServiceProvider
@@ -66,6 +68,12 @@ class ClinicalDocumentationServiceProvider extends ServiceProvider
         // keeps the meaning it captured even after a later supersession.
         $this->app->singleton(DiagnosisAssertionFactPublisher::class, \Modules\ClinicalDocumentation\Services\DiagnosisAssertionFactPublisher::class);
         $this->app->scoped(HospitalRegistrationPort::class, CapabilityHospitalRegistration::class);
+        // Emergency access is granted here and reviewed in the facility's one
+        // queue, which the registry owns. Scoped for the reason every
+        // capability-backed port is: it resolves its provider through the
+        // CapabilityRegistry, and a long-lived worker must not keep answering
+        // from a composition the fork has since redeployed.
+        $this->app->scoped(EmergencyAccessReviewPort::class, CapabilityEmergencyAccessReview::class);
     }
 
     /**

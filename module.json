@@ -24,7 +24,7 @@
         "provides": [
             {
                 "id": "clinicaldocumentation.active-clinical-record",
-                "version": "1.2.0",
+                "version": "1.3.0",
                 "modes": [
                     "sync"
                 ],
@@ -73,6 +73,13 @@
                 "mode": "sync",
                 "required": false,
                 "consumerContractTest": "tests/Contract/HospitalRegistrationConsumerTest.php"
+            },
+            {
+                "id": "hospitalcore.emergency-access-review",
+                "version": "^1.0",
+                "mode": "sync",
+                "required": true,
+                "consumerContractTest": "tests/Contract/EmergencyAccessReviewConsumerTest.php"
             },
             {
                 "id": "hospitalcore.patient-identity-reconciled",

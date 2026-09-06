@@ -10,6 +10,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
 use Modules\ClinicalDocumentation\Contracts\DiagnosisAssertionFactPublisher;
+use Modules\ClinicalDocumentation\Contracts\EmergencyAccessReviewPort;
 use Modules\ClinicalDocumentation\Models\AllergyAssertion;
 use Modules\ClinicalDocumentation\Models\ClinicalAddendum;
 use Modules\ClinicalDocumentation\Models\ClinicalArchivePackage;
@@ -33,6 +34,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
     public function __construct(
         private readonly CapabilityRegistry $capabilities,
         private readonly DiagnosisAssertionFactPublisher $facts,
+        private readonly EmergencyAccessReviewPort $emergencyAccess,
     ) {}
 
     public function acceptHandoff(array $command): array
@@ -214,7 +216,23 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         return $this->documentPayload($document);
     }
 
-    public function breakGlassRead(string $documentId, string $actorId, string $reason): array
+    /**
+     * Emergency access to one signed document, granted now and reviewed after.
+     *
+     * `$correlationId` joins an emergency somebody has already opened — the
+     * ward breaking glass on the episode and then on the note that says what
+     * was done is one emergency, and a queue that showed it as two would make
+     * a privacy officer join them by eye. Without one a fresh emergency is
+     * minted, because an access that is nobody's second access is still an
+     * emergency of one.
+     *
+     * The read is audited here, as it always was, and published to the
+     * facility's one emergency-access queue, which the registry owns. The audit
+     * row is this context's evidence of what it granted; the queue row is the
+     * review owed for it. They are not the same record, and merging them would
+     * have merged two contexts' evidence to unify one review.
+     */
+    public function breakGlassRead(string $documentId, string $actorId, string $reason, ?string $correlationId = null): array
     {
         $document = ClinicalDocument::findOrFail($documentId);
         if ($document->status !== 'signed') {
@@ -224,14 +242,28 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             throw new \InvalidArgumentException('Break-Glass access requires an emergency reason.');
         }
 
-        $correlationId = (string) \Illuminate\Support\Str::uuid();
+        $correlationId ??= (string) \Illuminate\Support\Str::uuid();
+        $auditId = (string) \Illuminate\Support\Str::uuid();
         $this->audit('break_glass_read', $actorId, $document->patient_id, $document->id, null, $reason, [
             'security_review_required' => true,
-        ], $correlationId);
+        ], $correlationId, $auditId);
+
+        $access = $this->emergencyAccess->publish([
+            'correlation_id' => $correlationId,
+            'patient_id' => $document->patient_id,
+            'registration_id' => $document->registration_id,
+            'subject_kind' => 'clinical-document',
+            'subject_id' => $document->id,
+            'scope' => 'clinical-document',
+            'source_event_id' => $auditId,
+            'actor_id' => $actorId,
+            'reason' => $reason,
+        ]);
 
         return array_merge($this->documentPayload($document), [
             'accessed_by' => $actorId,
             'correlation_id' => $correlationId,
+            'emergency_access_id' => $access['access_id'],
             'security_review_required' => true,
         ]);
     }
@@ -751,9 +783,10 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
     }
 
     /** @param array<string, mixed> $metadata */
-    private function audit(string $action, string $actorId, ?string $patientId, ?string $documentId = null, ?string $addendumId = null, ?string $reason = null, array $metadata = [], ?string $correlationId = null): void
+    private function audit(string $action, string $actorId, ?string $patientId, ?string $documentId = null, ?string $addendumId = null, ?string $reason = null, array $metadata = [], ?string $correlationId = null, ?string $eventId = null): void
     {
         ClinicalAuditEvent::create([
+            'id' => $eventId,
             'patient_id' => $patientId,
             'document_id' => $documentId,
             'addendum_id' => $addendumId,
