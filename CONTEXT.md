@@ -8,13 +8,16 @@ This context owns signed clinical documents, clinical facts, access control, add
 A clinically authored record whose signed form is immutable and whose correction is a linked addendum.
 
 **Active Clinical Record**:
-The authorized working view of signed clinical documents and facts for an active care journey; it is not a separate source of truth.
+The authorized working view of signed clinical documents and source-owned clinical facts for an active care journey; it is not a separate source of truth.
 
 **Clinical Addendum**:
 An auditable linked correction or clarification of a signed Clinical Document that preserves the original.
 
 **Clinical Fact**:
 An immutable contract-defined statement published after a care context finalizes its own record, allowing derived records and projections without transferring source ownership. This is the generic shape; a publishing context defines its own named variant, such as a Laboratory Result Clinical Projection or a Prescription Clinical Fact, and remains the authority for the record behind it.
+
+**Medication Administration Clinical Fact**:
+The immutable, source-referenced projection published by EPrescription for a recorded medication outcome. It is part of the Active Clinical Record and the Clinical Record Archive, while EPrescription remains authoritative for the underlying administration and its corrections.
 
 **Presented External Evidence**:
 A patient-provided file or scan staged against an active Hospital Registration before the treating clinician takes over. ClinicalDocumentation records only the file custody, stager identity, staging time, and the patient's freeform claim about the file; it records no clinical interpretation, trust decision, or asserted source authority. A clinician reviews it during draft authoring and makes any clinical incorporation an explicit, auditable authoring act. It uses FileVault's short-lived protected storage, needs no accepted Clinical Handoff to stage, and performs no OCR.
@@ -50,7 +53,7 @@ The emergency, reasoned, alert-producing access path that is separately audited 
 The sensitive authored content of a clinical record, encrypted and decrypted by ClinicalDocumentation rather than held as plaintext by MedicalRecords.
 
 **Clinical Record Archive**:
-The optional archive projection of finalized signed-document chains and structured facts after discharge, released through the MedicalRecords boundary.
+The optional archive projection of finalized signed-document chains and structured facts, including Medication Administration Clinical Facts, after discharge, released through the MedicalRecords boundary.
 
 **Clinical Record Release Capability**:
 A short-lived authorization for a named user and purpose to release a bounded encrypted record or archive package.
@@ -97,8 +100,8 @@ The sealed, access-controlled retention of finalized Clinical Documents and thei
 
 **InpatientCare** — the ward asks this context two questions and receives no clinical content for either: whether an accepted Clinical Handoff permits a clinician to author, and whether the episode's discharge documentation is complete. The second gates the ordinary discharge, so an incomplete summary keeps a patient in a bed. The ward owns the episode, the retention schedule for it and the audit of who read it; this context owns the documents and the release of them. Every supported composition with a ward carries this context, because a ward that documents nothing is not a hospital.
 
-**MedicalRecords** — the optional ciphertext vault. This context alone holds the keys, encrypts every Clinical Payload before it leaves the application, keeps the archive manifest, and authorizes each bounded one-patient release. Vault absence means sealed Local Clinical Retention, never a blocked discharge.
+**MedicalRecords** — the optional ciphertext vault. This context alone communicates with it: ClinicalDocumentation holds the keys, encrypts every Clinical Payload before it leaves the application, keeps the archive manifest, and authorizes each bounded one-patient release. EPrescription and every other source context are not MedicalRecords clients. Vault absence means sealed Local Clinical Retention, never a blocked discharge.
 
-**EPrescription** — depends on this context for prescribing. A Medication Prescription cannot be authored or issued without an Initial Diagnosis Prerequisite and a Clinical Rationale Reference to the accountable clinical record. A clinician with shortfall Takeover Authority may request a narrow, audited diagnosis and safety read anchored by the originating clinician's accepted Clinical Handoff; it receives only the facts needed to make a replacement decision, never unrestricted Clinical Document visibility or authoring rights, and no new Clinical Handoff is created. Laboratory and Radiology may publish results as supporting evidence; only an accountable clinician authors the resulting supplemental or superseding Diagnosis Assertion.
+**EPrescription** — depends on this context for prescribing. A Medication Prescription cannot be authored or issued without an Initial Diagnosis Prerequisite and a Clinical Rationale Reference to the accountable clinical record. A clinician with shortfall Takeover Authority may request a narrow, audited diagnosis and safety read anchored by the originating clinician's accepted Clinical Handoff; it receives only the facts needed to make a replacement decision, never unrestricted Clinical Document visibility or authoring rights, and no new Clinical Handoff is created. Laboratory and Radiology may publish results as supporting evidence; only an accountable clinician authors the resulting supplemental or superseding Diagnosis Assertion. EPrescription also publishes Medication Administration Clinical Facts here; this context owns the record-facing projection and archive path, but never the underlying medication administration or its correction.
 
 **Warehouse** — a guarded provider holding batch custody behind Clinical Consumable Usage. This context owns why a supply was used; Warehouse owns the stock truth, joined by one consumable audit correlation.
