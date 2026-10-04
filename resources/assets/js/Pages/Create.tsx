@@ -1,7 +1,8 @@
 import { Head, useForm } from "@inertiajs/react";
-import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { type FormEvent, type ReactNode, useRef, useState } from "react";
 import { FilePenLine } from "lucide-react";
 import { type ActionBarHandle } from "@/Components/ActionBar";
+import ExpandActionBarWhenReady from "../Components/ExpandActionBarWhenReady";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Input } from "@/Components/ui/input";
@@ -74,9 +75,8 @@ function CreateActionBar({ handoffId }: CreateProps) {
 function CreateLayout({ page, handoffId }: { page: ReactNode; handoffId: string }) {
     const panel = useRef<ActionBarHandle>(null);
 
-    useEffect(() => panel.current?.expand(), []);
-
     return <AuthenticatedLayout header="New clinical document">
+        <ExpandActionBarWhenReady panel={panel} />
         <Content actionBar={<CreateActionBar handoffId={handoffId} />} actionBarRef={panel}>{page}</Content>
     </AuthenticatedLayout>;
 }

@@ -1,7 +1,8 @@
 import { Head, router, useForm } from "@inertiajs/react";
-import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { type FormEvent, type ReactNode, useRef, useState } from "react";
 import { FileLock2, FilePenLine } from "lucide-react";
 import { type ActionBarHandle } from "@/Components/ActionBar";
+import ExpandActionBarWhenReady from "../Components/ExpandActionBarWhenReady";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Label } from "@/Components/ui/label";
@@ -70,9 +71,8 @@ function EditActionBar({ document }: { document: Document }) {
 function EditLayout({ page, document }: { page: ReactNode; document: Document }) {
     const panel = useRef<ActionBarHandle>(null);
 
-    useEffect(() => panel.current?.expand(), []);
-
     return <AuthenticatedLayout header="Edit clinical draft">
+        <ExpandActionBarWhenReady panel={panel} />
         <Content actionBar={<EditActionBar document={document} />} actionBarRef={panel}>{page}</Content>
     </AuthenticatedLayout>;
 }

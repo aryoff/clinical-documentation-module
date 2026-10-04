@@ -1,7 +1,8 @@
 import { Head, Link, useForm } from "@inertiajs/react";
-import { type FormEvent, type ReactNode, useEffect, useRef } from "react";
+import { type FormEvent, type ReactNode, useRef } from "react";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { type ActionBarHandle } from "@/Components/ActionBar";
+import ExpandActionBarWhenReady from "../Components/ExpandActionBarWhenReady";
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
@@ -48,9 +49,8 @@ function BreakGlassActionBar({ documentId }: BreakGlassProps) {
 function BreakGlassLayout({ page, documentId }: { page: ReactNode; documentId: string }) {
     const panel = useRef<ActionBarHandle>(null);
 
-    useEffect(() => panel.current?.expand(), []);
-
     return <AuthenticatedLayout header="Emergency clinical access">
+        <ExpandActionBarWhenReady panel={panel} />
         <Content actionBar={<BreakGlassActionBar documentId={documentId} />} actionBarRef={panel}>{page}</Content>
     </AuthenticatedLayout>;
 }
