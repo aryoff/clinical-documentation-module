@@ -45,6 +45,9 @@ class EventServiceProvider extends ServiceProvider
      */
     public function discoverEvents()
     {
+        // The resolver is global; this module owns it only during its scan.
+        $previous_callback = \Illuminate\Foundation\Events\DiscoverEvents::$guessClassNamesUsingCallback;
+
         // Provide a custom callback for class name resolution
         \Illuminate\Foundation\Events\DiscoverEvents::guessClassNamesUsing(
             function ($file, $basePath) {
@@ -68,7 +71,11 @@ class EventServiceProvider extends ServiceProvider
             }
         );
 
-        return parent::discoverEvents();
+        try {
+            return parent::discoverEvents();
+        } finally {
+            \Illuminate\Foundation\Events\DiscoverEvents::$guessClassNamesUsingCallback = $previous_callback;
+        }
     }
 
     /**
