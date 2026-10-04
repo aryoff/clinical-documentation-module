@@ -1,0 +1,36 @@
+# Copy to .github/workflows/notify-demo.yml in each module repository listed in
+# deploy/demo/modules.txt.
+#
+# Module code is not in the application repository and is not pinned by its
+# composer.lock on a demo checkout, so a module release produces no commit for
+# the demo to notice. Without this, a module could sit released for weeks while
+# the demo server serves the version that happened to be current at its last
+# application build. This closes that gap by telling the demo to rebuild.
+#
+# DEMO_DISPATCH_TOKEN needs only `contents: write` on the application
+# repository, which is the minimum the dispatch API accepts. It grants the
+# ability to trigger a demo deployment and nothing else; it is not a module
+# read credential and must not be reused as one.
+
+name: Notify demo
+
+on:
+    push:
+        branches: [main]
+
+concurrency:
+    group: notify-demo
+    cancel-in-progress: true
+
+jobs:
+    notify:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Ask the demo server to rebuild
+              env:
+                  GH_TOKEN: ${{ secrets.DEMO_DISPATCH_TOKEN }}
+              run: |
+                  gh api repos/aryoff/boilerplate-laravel-react/dispatches \
+                      --field event_type=module-updated \
+                      --field 'client_payload[module]=${{ github.event.repository.name }}' \
+                      --field 'client_payload[commit]=${{ github.sha }}'
