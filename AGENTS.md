@@ -33,6 +33,14 @@ Three of this module's permissions are classified **clinical** in HospitalCore's
 - **MedicalRecords is optional**: It is a ciphertext-only vault. This module is the sole key holder, encrypts before upload, holds the archive manifest, and authorizes each bounded one-patient release. Archive unavailability must never block discharge.
 - **No billing from signing**: Signing a document, diagnosis, or allergy never creates a Billable Service Fact. Ancillary providers own their own orders, results, and charges.
 
+## Administration fact projection
+
+- Consume `eprescription.administration-clinical-fact` through its named scalar event; never import source classes or write source storage. Receipt creates neither a Clinical Handoff nor authoring authority.
+- `AdministrationProjection` and `ArchiveAdministrationEntry` are insert-only evidence. They deliberately omit soft deletes; model guards and database triggers refuse update/delete. Corrections and basis reconciliation append source-linked facts.
+- Read frozen patient IDs through `ClinicalPatientIdentity`; never refile these point-in-time snapshots during identity reconciliation.
+- The chronological read includes signed documents/addenda and source facts, requires treating access, and logs its purpose. Its HTTP request also requires `records.read`.
+- An existing author-authorized `archiveDocument` request references the registration's administration projections. Repeating that intent can include late facts. Receipt alone requests no archive. Encryption, upload, verified custody and bounded release remain root #56; this change creates no local encryption or MedicalRecords client.
+
 ## Clinical Audit Standards
 - **Access-as-Event (Log-on-Read)**: Every "Read" operation on a clinical document must be logged.
 - **Addendum-Only Immutability**: Once a clinical document is signed, it is immutable. Corrections must be created as linked `ClinicalAddendum` records that preserve the original. A *document* has no `superseded` state.

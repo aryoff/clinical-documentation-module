@@ -24,7 +24,7 @@
         "provides": [
             {
                 "id": "clinicaldocumentation.active-clinical-record",
-                "version": "1.3.0",
+                "version": "1.4.0",
                 "modes": [
                     "sync"
                 ],
@@ -87,6 +87,13 @@
                 "mode": "async",
                 "required": false,
                 "consumerContractTest": "tests/Contract/PatientIdentityReconciledConsumerTest.php"
+            },
+            {
+                "id": "eprescription.administration-clinical-fact",
+                "version": "^1.4",
+                "mode": "async",
+                "required": false,
+                "consumerContractTest": "tests/Contract/AdministrationClinicalFactConsumerTest.php"
             }
         ]
     },

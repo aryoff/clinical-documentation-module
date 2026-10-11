@@ -6,6 +6,13 @@ namespace Modules\ClinicalDocumentation\Contracts;
 
 interface ActiveClinicalRecordContract
 {
+    /** @return array<string, mixed> */
+    public function chronologicalRecord(
+        string $patient_id,
+        string $actor_id,
+        string $purpose,
+    ): array;
+
     /** @param array<string, mixed> $command
      *  @return array<string, mixed> */
     public function acceptHandoff(array $command): array;
@@ -16,7 +23,11 @@ interface ActiveClinicalRecordContract
 
     /** @param array<string, mixed> $changes
      *  @return array<string, mixed> */
-    public function updateDraft(string $documentId, array $changes, string $actorId): array;
+    public function updateDraft(
+        string $documentId,
+        array $changes,
+        string $actorId,
+    ): array;
 
     /** @return array<string, mixed> */
     public function signDocument(string $documentId, string $actorId): array;
@@ -29,7 +40,11 @@ interface ActiveClinicalRecordContract
     public function signAddendum(string $addendumId, string $actorId): array;
 
     /** @return array<string, mixed> */
-    public function readDocument(string $documentId, string $actorId, string $purpose): array;
+    public function readDocument(
+        string $documentId,
+        string $actorId,
+        string $purpose,
+    ): array;
 
     /**
      * Emergency access to one signed document.
@@ -41,7 +56,12 @@ interface ActiveClinicalRecordContract
      *
      * @return array<string, mixed>
      */
-    public function breakGlassRead(string $documentId, string $actorId, string $reason, ?string $correlationId = null): array;
+    public function breakGlassRead(
+        string $documentId,
+        string $actorId,
+        string $reason,
+        ?string $correlationId = null,
+    ): array;
 
     /**
      * Record a Diagnosis Assertion into the patient's append-only lineage.
@@ -64,7 +84,11 @@ interface ActiveClinicalRecordContract
      *
      * @return array<string, mixed>
      */
-    public function currentDiagnosisHeads(string $patientId, string $actorId, string $purpose): array;
+    public function currentDiagnosisHeads(
+        string $patientId,
+        string $actorId,
+        string $purpose,
+    ): array;
 
     /**
      * The Clinical Diagnosis Read: every lineage with each revision in order and
@@ -72,7 +96,11 @@ interface ActiveClinicalRecordContract
      *
      * @return array<string, mixed>
      */
-    public function diagnosisLineageForPatient(string $patientId, string $actorId, string $purpose): array;
+    public function diagnosisLineageForPatient(
+        string $patientId,
+        string $actorId,
+        string $purpose,
+    ): array;
 
     /**
      * The Clinical Diagnosis Read for a clinician taking the case over, anchored
@@ -80,7 +108,13 @@ interface ActiveClinicalRecordContract
      *
      * @return array<string, mixed>
      */
-    public function diagnosisLineageForTakeover(string $patientId, string $actorId, string $authorizingActorId, string $handoffId, string $purpose): array;
+    public function diagnosisLineageForTakeover(
+        string $patientId,
+        string $actorId,
+        string $authorizingActorId,
+        string $handoffId,
+        string $purpose,
+    ): array;
 
     /**
      * A result owner publishes an immutable finding a clinician may cite. It is
@@ -89,14 +123,21 @@ interface ActiveClinicalRecordContract
      * @param array<string, mixed> $command
      * @return array<string, mixed>
      */
-    public function recordDiagnosticResultEvidence(array $command, string $actorId): array;
+    public function recordDiagnosticResultEvidence(
+        array $command,
+        string $actorId,
+    ): array;
 
     /** @param array<string, mixed> $command
      *  @return array<string, mixed> */
     public function assertAllergy(array $command, string $actorId): array;
 
     /** @return array<string, mixed> */
-    public function safetyFactsForPatient(string $patientId, string $actorId, string $purpose): array;
+    public function safetyFactsForPatient(
+        string $patientId,
+        string $actorId,
+        string $purpose,
+    ): array;
 
     /**
      * Read safety facts as a delegated prescriber while auditing both actors.
@@ -105,7 +146,13 @@ interface ActiveClinicalRecordContract
      *
      * @return array<string, mixed>
      */
-    public function safetyFactsForDelegatedPrescriber(string $patientId, string $actorId, string $authorizingActorId, string $handoffId, string $purpose): array;
+    public function safetyFactsForDelegatedPrescriber(
+        string $patientId,
+        string $actorId,
+        string $authorizingActorId,
+        string $handoffId,
+        string $purpose,
+    ): array;
 
     /** @return array<string, mixed> */
     public function archiveDocument(string $documentId, string $actorId): array;

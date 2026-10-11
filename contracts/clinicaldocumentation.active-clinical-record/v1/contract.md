@@ -1,6 +1,6 @@
 # Capability contract: `clinicaldocumentation.active-clinical-record` v1
 
-**Owner:** ClinicalDocumentation · **Interaction mode:** `sync` · **Version:** 1.1.0
+**Owner:** ClinicalDocumentation · **Interaction mode:** `sync` · **Version:** 1.4.0
 
 ClinicalDocumentation alone owns signed clinical content, signed addenda,
 Diagnosis Assertions, Allergy Assertions, clinical access evidence, and archive
@@ -16,6 +16,20 @@ to `ActiveClinicalRecordService` by the module service provider. Root user IDs,
 Hospital Registration IDs, and Patient Registry IDs are UUID strings.
 
 ## Operations
+
+- `chronologicalRecord(patient_id, actor_id, purpose)` returns `patient_id`
+  (resolved to its canonical identity), `purpose`, and chronological `entries`.
+  Entries are `clinical_document`, `clinical_addendum`, or
+  `medication_administration`, with `id`, `occurred_at`, and respectively
+  `document`, `addendum`, or the complete source `fact` snapshot. Drafts are
+  excluded. An accepted treating handoff is required and the read is audited;
+  the HTTP read additionally requires `clinicaldocumentation.records.read`.
+  Administration receipt requires no handoff and grants no authoring right.
+  Frozen source patient IDs are resolved through identity history at read time.
+  Administration/correction entries sort by the source's `occurred_at`; documents
+  and addenda sort by `encountered_at`, with a stable ID tie-breaker.
+  A `corrected` fact links through `corrects_administration_id`, and
+  `basis_reconciled` through `administration_id`; neither changes its original.
 
 - `acceptHandoff(array $command): array` accepts explicit evidence from an
   eligible care owner (`emergency`, `outpatient`, `inpatient`,
@@ -70,7 +84,15 @@ Hospital Registration IDs, and Patient Registry IDs are UUID strings.
   `medicalrecords.ciphertext-vault` is unavailable it returns
   `custody_state: local_retention`; discharge is never blocked. A resolved vault
   transitions the package to `pending_custody` until its own receipt contract
-  verifies custody.
+  verifies custody. Its additive `administration_facts` response contains complete
+  immutable snapshots for the signed document's registration and resolved
+  patient identity. Append-only local manifest references attach these facts
+  to the same archive intent; repeat requests include later source facts.
+  Receipt alone creates no package. This is archive-intent preparation only:
+  encryption, external transfer, verified custody and bounded release remain
+  the separate encrypted-archive workflow (#56). The original package
+  `integrity_hash` still hashes the signed document payload, not a custody
+  assertion over this growing intent. No clinical payload is scrubbed here.
 
 `safetyFactsForDelegatedPrescriber(patientId, actorId, authorizingActorId,
 handoffId, purpose)` returns the same purpose-scoped safety facts to a delegated

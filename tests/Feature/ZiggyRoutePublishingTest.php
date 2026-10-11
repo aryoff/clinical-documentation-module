@@ -29,40 +29,47 @@ class ZiggyRoutePublishingTest extends TestCase
 
     /** Every route this module gates on a clinical ability. */
     private const CLINICAL_ROUTES = [
-        'clinicaldocumentation.documents.author' => [
-            'clinicaldocumentation.create',
-            'clinicaldocumentation.store',
-            'clinicaldocumentation.edit',
-            'clinicaldocumentation.update',
-            'clinicaldocumentation.presented-external-evidence.review',
-            'clinicaldocumentation.presented-external-evidence.incorporate',
-            'clinicaldocumentation.presented-external-evidence.file',
+        "clinicaldocumentation.documents.author" => [
+            "clinicaldocumentation.create",
+            "clinicaldocumentation.store",
+            "clinicaldocumentation.edit",
+            "clinicaldocumentation.update",
+            "clinicaldocumentation.presented-external-evidence.review",
+            "clinicaldocumentation.presented-external-evidence.incorporate",
+            "clinicaldocumentation.presented-external-evidence.file",
         ],
-        'clinicaldocumentation.documents.sign' => ['clinicaldocumentation.submit'],
-        'clinicaldocumentation.documents.amend' => ['clinicaldocumentation.amend'],
+        "clinicaldocumentation.documents.sign" => [
+            "clinicaldocumentation.submit",
+        ],
+        "clinicaldocumentation.documents.amend" => [
+            "clinicaldocumentation.amend",
+        ],
     ];
 
     /** Every non-clinical route this module publishes through a FormRequest. */
     private const NON_CLINICAL_ROUTES = [
-        'clinicaldocumentation.records.read' => [
-            'clinicaldocumentation.index',
-            'clinicaldocumentation.show',
+        "clinicaldocumentation.records.read" => [
+            "clinicaldocumentation.index",
+            "clinicaldocumentation.show",
+            "clinicaldocumentation.records.show",
         ],
-        'clinicaldocumentation.records.break-glass' => [
-            'clinicaldocumentation.show',
-            'clinicaldocumentation.break-glass.create',
-            'clinicaldocumentation.break-glass',
+        "clinicaldocumentation.records.break-glass" => [
+            "clinicaldocumentation.show",
+            "clinicaldocumentation.break-glass.create",
+            "clinicaldocumentation.break-glass",
         ],
-        'clinicaldocumentation.archive.manage' => ['clinicaldocumentation.archive'],
-        'clinicaldocumentation.audit.view' => ['clinicaldocumentation.audit'],
+        "clinicaldocumentation.archive.manage" => [
+            "clinicaldocumentation.archive",
+        ],
+        "clinicaldocumentation.audit.view" => ["clinicaldocumentation.audit"],
     ];
 
     /** Routes available only when the optional HospitalCore provider is composed. */
     private const OPTIONAL_NON_CLINICAL_ROUTES = [
-        'clinicaldocumentation.records.stage-external-evidence' => [
-            'clinicaldocumentation.presented-external-evidence.create',
-            'clinicaldocumentation.presented-external-evidence.store',
-            'clinicaldocumentation.presented-external-evidence.file',
+        "clinicaldocumentation.records.stage-external-evidence" => [
+            "clinicaldocumentation.presented-external-evidence.create",
+            "clinicaldocumentation.presented-external-evidence.store",
+            "clinicaldocumentation.presented-external-evidence.file",
         ],
     ];
 
@@ -81,7 +88,11 @@ class ZiggyRoutePublishingTest extends TestCase
 
         foreach (self::CLINICAL_ROUTES as $ability => $routes) {
             foreach ($routes as $route) {
-                $this->assertNotContains($route, $published, "[{$route}] is advertised to a user who cannot {$ability}.");
+                $this->assertNotContains(
+                    $route,
+                    $published,
+                    "[{$route}] is advertised to a user who cannot {$ability}.",
+                );
             }
         }
     }
@@ -94,7 +105,11 @@ class ZiggyRoutePublishingTest extends TestCase
 
         foreach ($this->nonClinicalRoutes() as $ability => $routes) {
             foreach ($routes as $route) {
-                $this->assertNotContains($route, $published, "[{$route}] is advertised to a user who cannot {$ability}.");
+                $this->assertNotContains(
+                    $route,
+                    $published,
+                    "[{$route}] is advertised to a user who cannot {$ability}.",
+                );
             }
         }
     }
@@ -111,7 +126,11 @@ class ZiggyRoutePublishingTest extends TestCase
 
         foreach ($this->nonClinicalRoutes() as $ability => $routes) {
             foreach ($routes as $route) {
-                $this->assertContains($route, $published, "[{$route}] is withheld from a user holding {$ability}.");
+                $this->assertContains(
+                    $route,
+                    $published,
+                    "[{$route}] is withheld from a user holding {$ability}.",
+                );
             }
         }
     }
@@ -124,9 +143,14 @@ class ZiggyRoutePublishingTest extends TestCase
     public function test_a_clinical_route_stays_hidden_from_a_permission_holder_the_gate_refuses(): void
     {
         $uncredentialed = User::factory()->create();
-        $uncredentialed->givePermissionTo('clinicaldocumentation.documents.sign');
+        $uncredentialed->givePermissionTo(
+            "clinicaldocumentation.documents.sign",
+        );
 
-        $this->assertNotContains('clinicaldocumentation.submit', $this->publishedRoutes($uncredentialed));
+        $this->assertNotContains(
+            "clinicaldocumentation.submit",
+            $this->publishedRoutes($uncredentialed),
+        );
     }
 
     public function test_a_credentialed_clinician_is_still_told_about_every_route_they_may_call(): void
@@ -139,8 +163,10 @@ class ZiggyRoutePublishingTest extends TestCase
 
         // Without HospitalCore composed there is no clinical-authority regime,
         // so there is nothing to credential and nothing this test can prove.
-        if (! $this->clinicalAuthorityRegimeIsComposed()) {
-            $this->markTestSkipped('No provider binds the clinical-authority credentialing capability.');
+        if (!$this->clinicalAuthorityRegimeIsComposed()) {
+            $this->markTestSkipped(
+                "No provider binds the clinical-authority credentialing capability.",
+            );
         }
 
         $published = $this->publishedRoutes($clinician);
@@ -149,7 +175,11 @@ class ZiggyRoutePublishingTest extends TestCase
             foreach ($routes as $route) {
                 // The pages resolve these names in the browser; dropping one
                 // from the payload makes route() throw there rather than deny.
-                $this->assertContains($route, $published, "[{$route}] is withheld from a clinician credentialed for {$ability}.");
+                $this->assertContains(
+                    $route,
+                    $published,
+                    "[{$route}] is withheld from a clinician credentialed for {$ability}.",
+                );
             }
         }
     }
@@ -158,17 +188,23 @@ class ZiggyRoutePublishingTest extends TestCase
     private function publishedRoutes(User $user): array
     {
         return array_keys(
-            $this->actingAs($user)->getJson(route('populateSidebar'))->assertOk()->json('ziggy.routes'),
+            $this->actingAs($user)
+                ->getJson(route("populateSidebar"))
+                ->assertOk()
+                ->json("ziggy.routes"),
         );
     }
 
     /** @return array<string, list<string>> */
     private function nonClinicalRoutes(): array
     {
-        if (!ModuleUnderTest::isEnabled('HospitalCore')) {
+        if (!ModuleUnderTest::isEnabled("HospitalCore")) {
             return self::NON_CLINICAL_ROUTES;
         }
 
-        return [...self::NON_CLINICAL_ROUTES, ...self::OPTIONAL_NON_CLINICAL_ROUTES];
+        return [
+            ...self::NON_CLINICAL_ROUTES,
+            ...self::OPTIONAL_NON_CLINICAL_ROUTES,
+        ];
     }
 }
