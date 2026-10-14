@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
+        if (Schema::hasTable("cd_consumable_events") && DB::table("cd_consumable_events")->exists()) {
+            // Append-only evidence is never dropped silently: export it, then remove it deliberately.
+            throw new RuntimeException("cd_consumable_events holds consumable use evidence; export it before dropping the table.");
+        }
         Schema::dropIfExists("cd_consumable_events");
         if (DB::getDriverName() === "pgsql") {
             DB::unprepared("DROP FUNCTION IF EXISTS cd_forbid_consumable_rewrite()");

@@ -1,5 +1,7 @@
 # Sign Clinical Documents and Correct Them by Addendum
 
+> Recording a use is now HospitalCore's: see [ADR 0011](../../../HospitalCore/docs/adr/0011-record-consumable-use-against-the-registration-and-publish-its-own-charge.md). The text below naming this context as the recorder is superseded.
+
 Legacy SIMRS has no structured clinical reasoning at all. `FormRekamMedis.frm`,
 `FormMonitoringRM.frm`, `FormHasilRadiologi.frm`, and `FormTopTenPenyakit.frm`
 record the medical-records department's paper-era workflow: a folder is tracked,
