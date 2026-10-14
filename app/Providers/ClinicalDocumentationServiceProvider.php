@@ -93,6 +93,12 @@ class ClinicalDocumentationServiceProvider extends ServiceProvider
             DiagnosisAssertionFactPublisher::class,
             \Modules\ClinicalDocumentation\Services\DiagnosisAssertionFactPublisher::class,
         );
+        // Holds only bootstrap routing callbacks. They resolve current request
+        // authorization and scoped listeners when invoked, never at registration.
+        $this->app->singleton(
+            \Modules\ClinicalDocumentation\Contracts\DiagnosisFactRepublicationContract::class,
+            \Modules\ClinicalDocumentation\Services\DiagnosisFactRepublication::class,
+        );
         $this->app->scoped(
             HospitalRegistrationPort::class,
             CapabilityHospitalRegistration::class,

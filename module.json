@@ -25,9 +25,7 @@
             {
                 "id": "clinicaldocumentation.active-clinical-record",
                 "version": "1.4.0",
-                "modes": [
-                    "sync"
-                ],
+                "modes": ["sync"],
                 "contracts": {
                     "sync": "contracts/clinicaldocumentation.active-clinical-record/v1/contract.md"
                 },
@@ -37,9 +35,7 @@
             {
                 "id": "clinicaldocumentation.discharge-documentation",
                 "version": "1.0.0",
-                "modes": [
-                    "sync"
-                ],
+                "modes": ["sync"],
                 "contracts": {
                     "sync": "contracts/clinicaldocumentation.discharge-documentation/v1/contract.md"
                 },
@@ -49,14 +45,22 @@
             {
                 "id": "clinicaldocumentation.diagnosis-assertion-fact",
                 "version": "1.0.0",
-                "modes": [
-                    "async"
-                ],
+                "modes": ["async"],
                 "contracts": {
                     "async": "contracts/clinicaldocumentation.diagnosis-assertion-fact/v1/contract.md"
                 },
                 "providerContractTest": "tests/Contract/DiagnosisAssertionFactContractTest.php",
                 "binding": "Modules\\ClinicalDocumentation\\Contracts\\DiagnosisAssertionFactPublisher"
+            },
+            {
+                "id": "clinicaldocumentation.diagnosis-fact-republication",
+                "version": "1.0.0",
+                "modes": ["sync"],
+                "contracts": {
+                    "sync": "contracts/clinicaldocumentation.diagnosis-fact-republication/v1/contract.md"
+                },
+                "providerContractTest": "tests/Contract/DiagnosisFactRepublicationContractTest.php",
+                "binding": "Modules\\ClinicalDocumentation\\Contracts\\DiagnosisFactRepublicationContract"
             }
         ],
         "consumes": [
