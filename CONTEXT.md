@@ -62,7 +62,7 @@ A short-lived authorization for a named user and purpose to release a bounded en
 A short-lived protected FileVault object used to validate and encrypt a clinical artifact before verified archive custody.
 
 **Clinical Consumable Usage**:
-The patient-specific record of a single-use treatment supply that requests a correlated stock consumption from its custodian (a Pharmacy Profile for Medical Consumables) and, where the Tariff Catalog says so, publishes a chargeable fact itself.
+The patient-specific record of a single-use treatment supply that requests a correlated stock consumption from its custodian (a Pharmacy Profile for Medical Consumables) and, where the Tariff Catalog says so, publishes a chargeable fact itself (charging is a later step; recording a use creates none).
 
 **Clinical Consumable Order**:
 The clinical instruction for a treatment consumable that has no stock or billing effect until actual authorized use is recorded.
