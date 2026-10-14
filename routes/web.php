@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
-use Modules\ClinicalDocumentation\Http\Controllers\ClinicalConsumableController;
 use Modules\ClinicalDocumentation\Http\Controllers\ClinicalDocumentationController;
 
 /*
@@ -125,33 +124,6 @@ Route::middleware(["web", "auth"])->group(function () {
         ClinicalDocumentationController::class,
         "audit",
     ])->name("clinicaldocumentation.audit");
-
-    // Medical-consumable use. Unavailable (404) wherever no custodian is enabled, and each
-    // action decides in its FormRequest so the sidebar publishes only what the user may do.
-    Route::middleware("capability:pharmacy.consumable-stock")->group(
-        function () {
-            Route::post("/clinical-documentation/consumables/orders", [
-                ClinicalConsumableController::class,
-                "order",
-            ])->name("clinicaldocumentation.consumables.order");
-            Route::post("/clinical-documentation/consumables", [
-                ClinicalConsumableController::class,
-                "store",
-            ])->name("clinicaldocumentation.consumables.store");
-            Route::post("/clinical-documentation/consumables/{use}/correct", [
-                ClinicalConsumableController::class,
-                "correct",
-            ])
-                ->whereUuid("use")
-                ->name("clinicaldocumentation.consumables.correct");
-            Route::post("/clinical-documentation/consumables/{use}/waste", [
-                ClinicalConsumableController::class,
-                "waste",
-            ])
-                ->whereUuid("use")
-                ->name("clinicaldocumentation.consumables.waste");
-        },
-    );
 
     // Standard Clinical Document routes.
     Route::resource(

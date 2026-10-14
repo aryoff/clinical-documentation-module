@@ -5,15 +5,11 @@ declare(strict_types=1);
 namespace Modules\ClinicalDocumentation\Tests\Feature;
 
 use App\Models\User;
-use App\Support\CapabilityRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
-use Modules\ClinicalDocumentation\Models\ClinicalConsumableEvent;
 use Modules\ClinicalDocumentation\Models\ClinicalDocument;
 use Modules\ClinicalDocumentation\Tests\Support\CredentialsClinicalActors;
-use Modules\ClinicalDocumentation\Tests\Support\FakesConsumableCustody;
 use Modules\HospitalCore\Contracts\HospitalRegistrationContract;
 use Modules\HospitalCore\Models\Department;
 use Modules\HospitalCore\Models\Patient;
@@ -29,7 +25,6 @@ use Tests\Support\ModuleUnderTest;
 class ClinicalDocumentationAuthorizationTest extends TestCase
 {
     use CredentialsClinicalActors;
-    use FakesConsumableCustody;
     use RefreshDatabase;
 
     private ActiveClinicalRecordContract $records;
@@ -528,126 +523,6 @@ class ClinicalDocumentationAuthorizationTest extends TestCase
             'payload' => ['clarification' => 'Symptoms started three days ago.'],
             'encountered_at' => '2026-08-06T09:00:00+07:00',
         ];
-    }
-
-    // clinicaldocumentation.consumables.order / .record / .correct
-
-    public function test_a_consumable_order_needs_its_own_clinical_ability(): void
-    {
-        $this->requireConsumableCustody();
-        $body = [
-            'idempotency_key' => (string) Str::uuid(),
-            'registration_id' => $this->registration,
-            'product_id' => (string) Str::uuid(),
-            'quantity' => '1.000',
-        ];
-
-        $this->actingAs($this->clinician)
-            ->post(route('clinicaldocumentation.consumables.order'), $body)
-            ->assertForbidden();
-
-        $this->grantClinicalAbility($this->clinician, 'clinicaldocumentation.consumables.order');
-        $this->actingAs($this->clinician)
-            ->post(route('clinicaldocumentation.consumables.order'), $body)
-            ->assertRedirect()
-            ->assertSessionHasNoErrors();
-    }
-
-    public function test_recording_a_consumable_use_needs_the_record_ability_and_the_custodian_ability(): void
-    {
-        $this->requireConsumableCustody();
-        $body = $this->consumableUse();
-
-        $this->actingAs($this->clinician)
-            ->post(route('clinicaldocumentation.consumables.store'), $body)
-            ->assertForbidden();
-
-        $this->clinician->givePermissionTo('clinicaldocumentation.consumables.record');
-        $this->actingAs($this->clinician)
-            ->post(route('clinicaldocumentation.consumables.store'), $body)
-            ->assertForbidden();
-
-        $this->clinician->givePermissionTo('pharmacy.consumables.consume');
-        $this->actingAs($this->clinician)
-            ->post(route('clinicaldocumentation.consumables.store'), $body)
-            ->assertRedirect()
-            ->assertSessionHasNoErrors();
-    }
-
-    public function test_correcting_a_consumable_use_needs_the_correct_ability_not_the_record_ability(): void
-    {
-        $this->requireConsumableCustody();
-        $recorder = User::factory()->create();
-        $recorder->givePermissionTo(['clinicaldocumentation.consumables.record', 'pharmacy.consumables.consume']);
-        $this->actingAs($recorder)
-            ->post(route('clinicaldocumentation.consumables.store'), $this->consumableUse())
-            ->assertRedirect()
-            ->assertSessionHasNoErrors();
-        $use = ClinicalConsumableEvent::query()->sole()->use_id;
-        $body = [
-            'idempotency_key' => (string) Str::uuid(),
-            'approver_id' => (string) User::factory()->create()->id,
-            'reason' => 'Wrong batch scanned',
-        ];
-
-        $this->actingAs($recorder)
-            ->post(route('clinicaldocumentation.consumables.correct', $use), $body)
-            ->assertForbidden();
-
-        $recorder->givePermissionTo('clinicaldocumentation.consumables.correct');
-        $this->actingAs($recorder)
-            ->post(route('clinicaldocumentation.consumables.correct', $use), $body)
-            ->assertRedirect()
-            ->assertSessionHasNoErrors();
-    }
-
-    public function test_the_consumable_routes_are_not_found_where_no_custodian_is_enabled(): void
-    {
-        if ($this->app->make(CapabilityRegistry::class)->isResolved('pharmacy.consumable-stock')) {
-            self::markTestSkipped('A Pharmacy custodian is enabled; the 404 applies only without one.');
-        }
-        $this->installConsumableFakes();
-        $this->clinician->givePermissionTo([
-            'clinicaldocumentation.consumables.record',
-            'clinicaldocumentation.consumables.correct',
-        ]);
-        $use = (string) Str::uuid();
-
-        $this->actingAs($this->clinician)
-            ->post(route('clinicaldocumentation.consumables.store'), $this->consumableUse())
-            ->assertNotFound();
-        $this->actingAs($this->clinician)
-            ->post(route('clinicaldocumentation.consumables.order'), $this->consumableUse())
-            ->assertNotFound();
-        $this->actingAs($this->clinician)
-            ->post(route('clinicaldocumentation.consumables.correct', $use), [])
-            ->assertNotFound();
-        $this->actingAs($this->clinician)
-            ->post(route('clinicaldocumentation.consumables.waste', $use), [])
-            ->assertNotFound();
-    }
-
-    /** @return array<string, mixed> */
-    private function consumableUse(): array
-    {
-        return [
-            'idempotency_key' => (string) Str::uuid(),
-            'registration_id' => $this->registration,
-            'profile_id' => (string) Str::uuid(),
-            'product_id' => (string) Str::uuid(),
-            'batch_number' => 'B-1',
-            'expiry_date' => now()->addYear()->toDateString(),
-            'quantity' => '1.000',
-        ];
-    }
-
-    /** The routes exist only where a custodian is enabled; the custodian itself is faked. */
-    private function requireConsumableCustody(): void
-    {
-        if (!$this->app->make(CapabilityRegistry::class)->isResolved('pharmacy.consumable-stock')) {
-            self::markTestSkipped('Medical consumable routes require a Pharmacy custodian in the composition.');
-        }
-        $this->installConsumableFakes();
     }
 
     private function requireHospitalCoreForStaging(): void

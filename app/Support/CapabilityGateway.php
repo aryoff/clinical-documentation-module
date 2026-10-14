@@ -42,12 +42,6 @@ final class CapabilityGateway
         return null;
     }
 
-    /** Whether an enabled module binds a provider for this capability right now. */
-    public function isAvailable(string $capabilityId): bool
-    {
-        return $this->provider($capabilityId) !== null;
-    }
-
     /**
      * Invoke an operation on a capability this module cannot work without.
      *

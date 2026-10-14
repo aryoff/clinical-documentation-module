@@ -14,10 +14,10 @@ This module handles Electronic Medical Records (EMR) and clinical documentation 
 
 ## Clinical Authority Gating
 
-Four of this module's permissions are classified **clinical** in HospitalCore's `module.json` — `documents.author`, `documents.sign`, `documents.amend` and `consumables.order`. Reading, auditing, archiving, Break-Glass, `consumables.record` and `consumables.correct` are not. A clinical permission is refused by `Gate::before` unless the user holds a matching Clinical Authority, so holding it by role is **not** proof the action is available.
+Three of this module's permissions are classified **clinical** in HospitalCore's `module.json` — `documents.author`, `documents.sign` and `documents.amend`. Reading, auditing, archiving and Break-Glass are not. A clinical permission is refused by `Gate::before` unless the user holds a matching Clinical Authority, so holding it by role is **not** proof the action is available.
 
 - **Gate in a `FormRequest`; `permission:` middleware does not satisfy this rule.** `/populateSidebar` reflects the `FormRequest` and strips the route when `authorize()` refuses, but it cannot see middleware. The module's routes therefore decide in their requests, with the canonical rule in [Modules/AGENTS.md](../AGENTS.md#authorization-belongs-in-a-formrequest).
-- **Guard every control with `route().has()`.** The authorities (author, sign, amend; consumable ordering has no page yet) are distinct and pages are reachable without them: `Pages/Edit.tsx` shows "Sign and lock" only where the signing route survived, `Pages/Show.tsx` fits the addendum panel only where the amend route did, and `Pages/Index.tsx` links a draft to its editor only where authoring did — `route()` on a name Ziggy no longer carries throws rather than returning a dead href. See [Modules/AGENTS.md](../AGENTS.md#and-the-control-it-gates-is-not-rendered).
+- **Guard every control with `route().has()`.** The three authorities are distinct and pages are reachable without them: `Pages/Edit.tsx` shows "Sign and lock" only where the signing route survived, `Pages/Show.tsx` fits the addendum panel only where the amend route did, and `Pages/Index.tsx` links a draft to its editor only where authoring did — `route()` on a name Ziggy no longer carries throws rather than returning a dead href. See [Modules/AGENTS.md](../AGENTS.md#and-the-control-it-gates-is-not-rendered).
 - **A domain refusal is not an authorization refusal.** Editing a signed document, submitting twice, or emptying a draft must be answered by the domain rule, with a credentialed actor. Tests that credential through `tests/Support/CredentialsClinicalActors` prove the rule; an uncredentialed actor proves only the Gate.
 
 ## Modular Classification
@@ -40,13 +40,6 @@ Four of this module's permissions are classified **clinical** in HospitalCore's 
 - Read frozen patient IDs through `ClinicalPatientIdentity`; never refile these point-in-time snapshots during identity reconciliation.
 - The chronological read includes signed documents/addenda and source facts, requires treating access, and logs its purpose. Its HTTP request also requires `records.read`.
 - An existing author-authorized `archiveDocument` request references the registration's administration projections. Repeating that intent can include late facts. Receipt alone requests no archive. Encryption, upload, verified custody and bounded release remain root #56; this change creates no local encryption or MedicalRecords client.
-
-## Medical Consumable Usage
-
-- **This module owns why a supply was used, never the balance.** `ClinicalConsumableUsageService` records an order (no stock effect), an actual use, a correction and waste as append-only `cd_consumable_events`. The stock effect is Pharmacy's, reached through `ConsumableStockPort` by capability `pharmacy.consumable-stock`; one `use_id` joins the event to Pharmacy's movement. See Pharmacy [ADR 0009](../Pharmacy/docs/adr/0009-hold-medical-consumables-in-pharmacy-profiles-and-leave-ward-supplies-in-warehouse.md).
-- **No custodian means no use.** Ordering and recording raise `ConsumableStockUnavailable` (correcting or wasting an unknown use is refused earlier, as a validation error) and the routes are 404 behind `capability:pharmacy.consumable-stock`. Never add a local fallback balance.
-- **The custodian runs inside the same transaction as the event**, so a Pharmacy refusal leaves no use fact and a failed event leaves no movement. Record, waste and correct routes also require `pharmacy.consumables.consume` in their FormRequests, so a user the custodian would refuse is not offered the route.
-- **Charging is not here.** Recording a use creates no Billable Service Fact; that is a later step through HospitalCore's Tariff Catalog.
 
 ## Clinical Audit Standards
 - **Access-as-Event (Log-on-Read)**: Every "Read" operation on a clinical document must be logged.

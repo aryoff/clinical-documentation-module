@@ -103,12 +103,6 @@ class ClinicalDocumentationServiceProvider extends ServiceProvider
             HospitalRegistrationPort::class,
             CapabilityHospitalRegistration::class,
         );
-        // Medical consumables are held by whoever provides the capability; scoped like every
-        // capability-backed port so a long-lived worker re-resolves the deployed composition.
-        $this->app->scoped(
-            \Modules\ClinicalDocumentation\Contracts\ConsumableStockPort::class,
-            \Modules\ClinicalDocumentation\Services\Capabilities\CapabilityConsumableStock::class,
-        );
         // Emergency access is granted here and reviewed in the facility's one
         // queue, which the registry owns. Scoped for the reason every
         // capability-backed port is: it resolves its provider through the
