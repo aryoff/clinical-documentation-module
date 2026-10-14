@@ -62,7 +62,7 @@ A short-lived authorization for a named user and purpose to release a bounded en
 A short-lived protected FileVault object used to validate and encrypt a clinical artifact before verified archive custody.
 
 **Clinical Consumable Usage**:
-The patient-specific record of a single-use treatment supply that requests a correlated Warehouse issue and may publish a chargeable fact.
+The patient-specific record of a single-use treatment supply that requests a correlated stock consumption from its custodian (a Pharmacy Profile for Medical Consumables) and, where the Tariff Catalog says so, publishes a chargeable fact itself.
 
 **Clinical Consumable Order**:
 The clinical instruction for a treatment consumable that has no stock or billing effect until actual authorized use is recorded.
@@ -106,4 +106,4 @@ The sealed, access-controlled retention of finalized Clinical Documents and thei
 
 **EPrescription** — depends on this context for prescribing. A Medication Prescription cannot be authored or issued without an Initial Diagnosis Prerequisite and a Clinical Rationale Reference to the accountable clinical record. A clinician with shortfall Takeover Authority may request a narrow, audited diagnosis and safety read anchored by the originating clinician's accepted Clinical Handoff; it receives only the facts needed to make a replacement decision, never unrestricted Clinical Document visibility or authoring rights, and no new Clinical Handoff is created. Laboratory and Radiology may publish results as supporting evidence; only an accountable clinician authors the resulting supplemental or superseding Diagnosis Assertion. EPrescription also publishes Medication Administration Clinical Facts here; this context owns the record-facing projection and archive path, but never the underlying medication administration or its correction.
 
-**Warehouse** — a guarded provider holding batch custody behind Clinical Consumable Usage. This context owns why a supply was used; Warehouse owns the stock truth, joined by one consumable audit correlation.
+**Pharmacy** — a guarded provider holding batch custody of Medical Consumables behind Clinical Consumable Usage. This context owns why a supply was used; Pharmacy owns the stock truth, joined by one consumable audit correlation. Without it, treatment-supply use is unavailable and no balance is kept here.
