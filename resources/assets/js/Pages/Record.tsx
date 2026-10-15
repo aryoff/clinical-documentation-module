@@ -10,6 +10,8 @@ import {
 } from "@/Components/ui/card";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout/AuthenticatedLayout";
 import Content from "@/Layouts/AuthenticatedLayout/Components/Content";
+import { useModuleT } from "@/hooks/useModuleT";
+import { joinParts } from "../Support/ids";
 
 type AdministrationFact = {
   type: string;
@@ -62,19 +64,8 @@ type Entry = { id: string; occurred_at: string } & (
 type RecordProps = PageProps & {
   record: { patient_id: string; entries: Entry[] };
 };
-const outcomeLabels: Record<string, string> = {
-  given: "Given",
-  partial: "Partially given",
-  held: "Held",
-  refused: "Refused",
-  missed: "Missed",
-};
-const basisLabels: Record<string, string> = {
-  prescription: "Prescription",
-  emergency: "Emergency",
-  protocol: "Protocol",
-  none: "No basis recorded",
-};
+const outcomeCodes = ["given", "partial", "held", "refused", "missed"];
+const basisCodes = ["prescription", "emergency", "protocol", "none"];
 
 const Administration = ({
   fact,
@@ -85,79 +76,76 @@ const Administration = ({
   factId: string;
   originalFactId?: string;
 }) => {
+  const { t } = useModuleT();
   const snapshot = fact.administration;
   const outcome = fact.outcome ?? snapshot?.outcome ?? "unknown";
   const quantity = fact.dose?.quantity ?? snapshot?.dose_quantity;
   const unit = fact.dose?.unit ?? snapshot?.dose_unit;
   return (
-    <Card id={`fact-${factId}`}>
+    <Card id={joinParts("", "fact-", factId)}>
       <CardHeader>
-        <Badge className="w-fit" variant="secondary">
+        <Badge className={"w-fit"} variant={"secondary"}>
           {fact.type === "corrected"
-            ? "Administration correction"
+            ? t("record.administration_correction")
             : fact.type === "basis_reconciled"
-              ? "Basis reconciled"
-              : "Medication administration"}
+              ? t("record.basis_reconciled")
+              : t("record.medication_administration")}
         </Badge>
         <CardTitle>
-          {fact.medicine?.product_name ??
-            snapshot?.product_name ??
-            "Medicine not supplied"}{" "}
-          · {outcomeLabels[outcome] ?? `Unknown outcome (${outcome})`}
+          {t("record.medicine_outcome", {
+            medicine: fact.medicine?.product_name ?? snapshot?.product_name ?? t("record.medicine_not_supplied"),
+            outcome: outcomeCodes.includes(outcome) ? t(`record.outcome.${outcome}`) : t("record.unknown_outcome", { outcome }),
+          })}
         </CardTitle>
-        <CardDescription>Registration {fact.registration_id}</CardDescription>
+        <CardDescription>{t("record.registration", { id: fact.registration_id })}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3 text-sm">
+      <CardContent className={"space-y-3 text-sm"}>
         <p>
-          {quantity == null ? "No dose recorded" : `${quantity} ${unit ?? ""}`}{" "}
-          · {fact.route ?? snapshot?.route ?? "Route not supplied"}
+          {t("record.dose_route", {
+            dose: quantity == null ? t("record.no_dose_recorded") : `${quantity} ${unit ?? ""}`,
+            route: fact.route ?? snapshot?.route ?? t("record.route_not_supplied"),
+          })}
         </p>
         <p>
-          Administered by{" "}
-          {fact.administered_by?.name ??
-            snapshot?.administered_by_name ??
-            "Not supplied"}{" "}
-          at{" "}
-          {fact.administered_at ?? snapshot?.administered_at ?? "Not supplied"}
+          {t("record.administered_by_at", {
+            name: fact.administered_by?.name ?? snapshot?.administered_by_name ?? t("record.not_supplied"),
+            at: fact.administered_at ?? snapshot?.administered_at ?? t("record.not_supplied"),
+          })}
         </p>
-        {fact.care_location && <p>Care location: {fact.care_location.name}</p>}
+        {fact.care_location && <p>{t("record.care_location", { name: fact.care_location.name })}</p>}
         <p>
-          Basis:{" "}
-          {basisLabels[fact.basis.type] ?? `Unknown basis (${fact.basis.type})`}{" "}
-          · {fact.basis.state ?? "State not supplied"}
+          {t("record.basis_line", {
+            basis: basisCodes.includes(fact.basis.type) ? t(`record.basis.${fact.basis.type}`) : t("record.unknown_basis", { basis: fact.basis.type }),
+            state: fact.basis.state ?? t("record.state_not_supplied"),
+          })}
         </p>
-        {fact.reason && <p>Outcome reason: {fact.reason}</p>}
+        {fact.reason && <p>{t("record.outcome_reason", { reason: fact.reason })}</p>}
         {fact.corrects_administration_id && (
           <p>
-            Corrects source administration:{" "}
-            <span className="font-mono">{fact.corrects_administration_id}</span>
-            . {fact.correction_reason}
+            {t("record.corrects_source")}{" "}
+            <span className={"font-mono"}>{fact.corrects_administration_id}</span>
+            {t("record.correction_reason_suffix", { reason: fact.correction_reason ?? "" })}
           </p>
         )}
         {originalFactId &&
           (fact.corrects_administration_id ||
             fact.type === "basis_reconciled") && (
             <a
-              className="text-primary block underline"
-              href={`#fact-${originalFactId}`}
-            >
-              View original administration
-            </a>
+              className={"text-primary block underline"}
+              href={joinParts("", "#fact-", originalFactId)}
+            >{t("record.view_original_administration")}</a>
           )}
         {fact.reconciled_by && (
           <p>
-            Reconciled by {fact.reconciled_by.name}; original administration
-            stays unchanged.
+            {t("record.reconciled_by", { name: fact.reconciled_by.name })}
           </p>
         )}
-        <p className="text-muted-foreground break-all">
-          Source: {fact.source_reference}
+        <p className={"text-muted-foreground break-all"}>
+          {t("record.source", { reference: fact.source_reference })}
         </p>
         <details>
-          <summary className="cursor-pointer font-medium">
-            Verification and source snapshot
-          </summary>
-          <pre className="bg-muted mt-3 overflow-auto rounded p-3 break-all whitespace-pre-wrap">
+          <summary className={"cursor-pointer font-medium"}>{t("record.verification_and_source_snapshot")}</summary>
+          <pre className={"bg-muted mt-3 overflow-auto rounded p-3 break-all whitespace-pre-wrap"}>
             {JSON.stringify(fact, null, 2)}
           </pre>
         </details>
@@ -167,6 +155,7 @@ const Administration = ({
 };
 
 const Record = ({ record }: RecordProps) => {
+  const { t } = useModuleT();
   const sourceEntries = new Map<string, string>();
   for (const entry of record.entries) {
     if (
@@ -178,23 +167,21 @@ const Record = ({ record }: RecordProps) => {
   }
   return (
     <>
-      <Head title="Active clinical record" />
-      <Content description="Signed documents and source-owned administration evidence, in chronological order. Corrections preserve the original evidence.">
-        <p className="text-muted-foreground mb-4 text-sm">
-          Patient {record.patient_id}
+      <Head title={t("record.active_clinical_record")} />
+      <Content description={t("record.signed_documents_and_source")}>
+        <p className={"text-muted-foreground mb-4 text-sm"}>
+          {t("record.patient", { id: record.patient_id })}
         </p>
         {route().has("clinicaldocumentation.index") && (
           <Link
-            className="text-primary mb-5 block text-sm underline"
+            className={"text-primary mb-5 block text-sm underline"}
             href={route("clinicaldocumentation.index")}
-          >
-            Back to documents
-          </Link>
+          >{t("record.back_to_documents")}</Link>
         )}
-        <ol className="space-y-5">
+        <ol className={"space-y-5"}>
           {record.entries.map((entry) => (
             <li key={entry.id}>
-              <p className="text-muted-foreground mb-2 text-sm">
+              <p className={"text-muted-foreground mb-2 text-sm"}>
                 {new Date(entry.occurred_at).toLocaleString()}
               </p>
               {entry.kind === "medication_administration" ? (
@@ -212,14 +199,14 @@ const Record = ({ record }: RecordProps) => {
                     <CardTitle>
                       {entry.kind === "clinical_document"
                         ? entry.document.template
-                        : "Signed addendum"}
+                        : t("record.signed_addendum")}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3 text-sm">
+                  <CardContent className={"space-y-3 text-sm"}>
                     {entry.kind === "clinical_addendum" && (
                       <p>{entry.addendum.reason}</p>
                     )}
-                    <pre className="overflow-auto break-all whitespace-pre-wrap">
+                    <pre className={"overflow-auto break-all whitespace-pre-wrap"}>
                       {JSON.stringify(
                         entry.kind === "clinical_document"
                           ? entry.document.payload
@@ -230,16 +217,14 @@ const Record = ({ record }: RecordProps) => {
                     </pre>
                     {route().has("clinicaldocumentation.show") && (
                       <Link
-                        className="text-primary underline"
+                        className={"text-primary underline"}
                         href={route(
                           "clinicaldocumentation.show",
                           entry.kind === "clinical_document"
                             ? entry.document.document_id
                             : entry.addendum.document_id,
                         )}
-                      >
-                        Read signed document
-                      </Link>
+                      >{t("record.read_signed_document")}</Link>
                     )}
                   </CardContent>
                 </Card>
@@ -248,14 +233,14 @@ const Record = ({ record }: RecordProps) => {
           ))}
         </ol>
         {record.entries.length === 0 && (
-          <p>No finalized clinical evidence recorded.</p>
+          <p>{t("record.no_finalized_clinical_evidence")}</p>
         )}
       </Content>
     </>
   );
 };
 Record.layout = (page: ReactNode) => (
-  <AuthenticatedLayout header="Active clinical record">
+  <AuthenticatedLayout header={(t) => t("record.active_clinical_record")}>
     {page}
   </AuthenticatedLayout>
 );

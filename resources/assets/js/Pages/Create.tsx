@@ -10,6 +10,7 @@ import { Label } from "@/Components/ui/label";
 import { Textarea } from "@/Components/ui/textarea";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout/AuthenticatedLayout";
 import Content from "@/Layouts/AuthenticatedLayout/Components/Content";
+import { useModuleT } from "@/hooks/useModuleT";
 
 type CreateProps = { handoffId: string };
 type ClinicalDocumentForm = {
@@ -21,6 +22,7 @@ type ClinicalDocumentForm = {
 };
 
 function CreateActionBar({ handoffId }: CreateProps) {
+  const { t } = useModuleT();
     const { data, post, processing, setData, transform, errors } = useForm<ClinicalDocumentForm>({
         handoff_id: handoffId,
         template: "soap",
@@ -38,7 +40,7 @@ function CreateActionBar({ handoffId }: CreateProps) {
         try {
             parsed = JSON.parse(payload);
         } catch {
-            alert("Payload must be valid JSON.");
+            alert(t("create.payload_must_be_valid"));
 
             return;
         }
@@ -50,49 +52,52 @@ function CreateActionBar({ handoffId }: CreateProps) {
         post(route("clinicaldocumentation.store"));
     };
 
-    return <form className="space-y-4 p-5" onSubmit={submit}>
+    return <form className={"space-y-4 p-5"} onSubmit={submit}>
         <div>
-            <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Private draft</p>
-            <h2 className="mt-2 font-semibold text-foreground">Clinical authoring</h2>
+            <p className={"text-xs font-semibold tracking-wider text-muted-foreground uppercase"}>{t("create.private_draft")}</p>
+            <h2 className={"mt-2 font-semibold text-foreground"}>{t("create.clinical_authoring")}</h2>
         </div>
-        <div className="space-y-2">
-            <Label htmlFor="template">Template</Label>
-            <Input id="template" value={data.template} onChange={(event) => setData("template", event.target.value)} />
+        <div className={"space-y-2"}>
+            <Label htmlFor={"template"}>{t("create.template")}</Label>
+            <Input id={"template"} value={data.template} onChange={(event) => setData("template", event.target.value)} />
         </div>
-        <div className="space-y-2">
-            <Label htmlFor="template-version">Template version</Label>
-            <Input id="template-version" value={data.template_version} onChange={(event) => setData("template_version", event.target.value)} />
+        <div className={"space-y-2"}>
+            <Label htmlFor={"template-version"}>{t("create.template_version")}</Label>
+            <Input id={"template-version"} value={data.template_version} onChange={(event) => setData("template_version", event.target.value)} />
         </div>
-        <div className="space-y-2">
-            <Label htmlFor="payload">Clinical payload</Label>
-            <Textarea id="payload" className="min-h-64 font-mono text-xs" value={payload} onChange={(event) => setPayload(event.target.value)} />
+        <div className={"space-y-2"}>
+            <Label htmlFor={"payload"}>{t("create.clinical_payload")}</Label>
+            <Textarea id={"payload"} className={"min-h-64 font-mono text-xs"} value={payload} onChange={(event) => setPayload(event.target.value)} />
         </div>
-        {Object.values(errors).map((error) => <p key={String(error)} className="text-sm text-destructive">{String(error)}</p>)}
-        <Button className="w-full" disabled={processing}>Create private draft</Button>
+        {Object.values(errors).map((error) => <p key={String(error)} className={"text-sm text-destructive"}>{String(error)}</p>)}
+        <Button className={"w-full"} disabled={processing}>{t("create.create_private_draft")}</Button>
     </form>;
 }
 
 function CreateLayout({ page, handoffId }: { page: ReactNode; handoffId: string }) {
     const panel = useRef<ActionBarHandle>(null);
 
-    return <AuthenticatedLayout header="New clinical document">
+    return <AuthenticatedLayout header={(t) => t("create.new_clinical_document")}>
         <ExpandActionBarWhenReady panel={panel} />
         <Content actionBar={<CreateActionBar handoffId={handoffId} />} actionBarRef={panel}>{page}</Content>
     </AuthenticatedLayout>;
 }
 
-const Create = ({ handoffId }: CreateProps) => <>
-    <Head title="New clinical document" />
-    <p className="mb-6 text-sm text-muted-foreground">Document authoring is tied to the accepted handoff below. The form opens in the action panel so the record context remains visible.</p>
+const Create = ({ handoffId }: CreateProps) => {
+  const { t } = useModuleT();
+  return <>
+    <Head title={t("create.new_clinical_document")} />
+    <p className={"mb-6 text-sm text-muted-foreground"}>{t("create.document_authoring_is_tied")}</p>
     <Card>
         <CardHeader>
-            <FilePenLine className="size-5 text-primary" />
-            <CardTitle>Accepted Clinical Handoff</CardTitle>
-            <CardDescription>This handoff authorizes you to create a private draft. It does not grant ongoing access outside this care responsibility.</CardDescription>
+            <FilePenLine className={"size-5 text-primary"} />
+            <CardTitle>{t("create.accepted_clinical_handoff")}</CardTitle>
+            <CardDescription>{t("create.this_handoff_authorizes_you")}</CardDescription>
         </CardHeader>
-        <CardContent><code className="rounded bg-muted px-2 py-1 text-xs">{handoffId}</code></CardContent>
+        <CardContent><code className={"rounded bg-muted px-2 py-1 text-xs"}>{handoffId}</code></CardContent>
     </Card>
 </>;
+};
 
 Create.layout = (page: ReactNode) => {
     const props = ((page as { props?: CreateProps }).props ?? page) as CreateProps;

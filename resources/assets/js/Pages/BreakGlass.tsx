@@ -10,6 +10,7 @@ import { Label } from "@/Components/ui/label";
 import { Textarea } from "@/Components/ui/textarea";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout/AuthenticatedLayout";
 import Content from "@/Layouts/AuthenticatedLayout/Components/Content";
+import { useModuleT } from "@/hooks/useModuleT";
 
 type BreakGlassDocument = {
     document_id: string;
@@ -24,6 +25,7 @@ type BreakGlassDocument = {
 type BreakGlassProps = { documentId: string; document?: BreakGlassDocument };
 
 function BreakGlassActionBar({ documentId }: BreakGlassProps) {
+  const { t } = useModuleT();
     const { data, post, processing, setData, errors } = useForm({ reason: "" });
 
     const submit = (event: FormEvent) => {
@@ -31,67 +33,70 @@ function BreakGlassActionBar({ documentId }: BreakGlassProps) {
         post(route("clinicaldocumentation.break-glass", documentId));
     };
 
-    return <form className="space-y-4 p-5" onSubmit={submit}>
+    return <form className={"space-y-4 p-5"} onSubmit={submit}>
         <div>
-            <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Emergency access</p>
-            <h2 className="mt-2 font-semibold text-foreground">Break Glass</h2>
+            <p className={"text-xs font-semibold tracking-wider text-muted-foreground uppercase"}>{t("break_glass.emergency_access")}</p>
+            <h2 className={"mt-2 font-semibold text-foreground"}>{t("break_glass.break_glass")}</h2>
         </div>
-        <p className="text-sm text-muted-foreground">This grants one audited read of signed evidence. It grants no authoring and no ongoing access, and it is flagged for security review.</p>
-        <div className="space-y-2">
-            <Label htmlFor="reason">Emergency reason</Label>
-            <Textarea id="reason" required className="min-h-40" placeholder="Why ordinary treating access is unavailable right now" value={data.reason} onChange={(event) => setData("reason", event.target.value)} />
+        <p className={"text-sm text-muted-foreground"}>{t("break_glass.this_grants_one_audited")}</p>
+        <div className={"space-y-2"}>
+            <Label htmlFor={"reason"}>{t("break_glass.emergency_reason")}</Label>
+            <Textarea id={"reason"} required className={"min-h-40"} placeholder={t("break_glass.why_ordinary_treating_access")} value={data.reason} onChange={(event) => setData("reason", event.target.value)} />
         </div>
-        {errors.reason && <p className="text-sm text-destructive">{errors.reason}</p>}
-        <Button className="w-full" variant="destructive" disabled={processing}>Break Glass and record the reason</Button>
+        {errors.reason && <p className={"text-sm text-destructive"}>{errors.reason}</p>}
+        <Button className={"w-full"} variant={"destructive"} disabled={processing}>{t("break_glass.break_glass_and_record")}</Button>
     </form>;
 }
 
 function BreakGlassLayout({ page, documentId }: { page: ReactNode; documentId: string }) {
     const panel = useRef<ActionBarHandle>(null);
 
-    return <AuthenticatedLayout header="Emergency clinical access">
+    return <AuthenticatedLayout header={(t) => t("break_glass.emergency_clinical_access")}>
         <ExpandActionBarWhenReady panel={panel} />
         <Content actionBar={<BreakGlassActionBar documentId={documentId} />} actionBarRef={panel}>{page}</Content>
     </AuthenticatedLayout>;
 }
 
-const BreakGlass = ({ documentId, document }: BreakGlassProps) => <>
-    <Head title="Emergency clinical access" />
-    <Alert variant="destructive" className="mb-6">
-        <ShieldAlert className="size-4" />
-        <AlertTitle>Break-Glass is separately audited</AlertTitle>
-        <AlertDescription>Your name, your stated reason, and the time of access are recorded against this record and reviewed by the security team.</AlertDescription>
+const BreakGlass = ({ documentId, document }: BreakGlassProps) => {
+  const { t } = useModuleT();
+  return <>
+    <Head title={t("break_glass.emergency_clinical_access")} />
+    <Alert variant={"destructive"} className={"mb-6"}>
+        <ShieldAlert className={"size-4"} />
+        <AlertTitle>{t("break_glass.break_glass_is_separately")}</AlertTitle>
+        <AlertDescription>{t("break_glass.your_name_your_stated")}</AlertDescription>
     </Alert>
     {document
         ? <>
             <Card>
                 <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
+                    <div className={"flex items-start justify-between gap-4"}>
                         <div>
-                            <CardTitle>{document.template} <span className="text-muted-foreground">v{document.template_version}</span></CardTitle>
-                            <CardDescription className="mt-2">Encountered {new Date(document.encountered_at).toLocaleString()} · signed {document.signed_at ? new Date(document.signed_at).toLocaleString() : "not yet"}</CardDescription>
+                            <CardTitle>{document.template} <span className={"text-muted-foreground"}>{t("shared.template_version", { version: document.template_version })}</span></CardTitle>
+                            <CardDescription className={"mt-2"}>{t("shared.encountered_signed", { encountered: new Date(document.encountered_at).toLocaleString(), signed: document.signed_at ? new Date(document.signed_at).toLocaleString() : t("break_glass.not_yet") })}</CardDescription>
                         </div>
-                        <code className="rounded bg-muted px-2 py-1 text-xs">{document.correlation_id}</code>
+                        <code className={"rounded bg-muted px-2 py-1 text-xs"}>{document.correlation_id}</code>
                     </div>
                 </CardHeader>
-                <CardContent><pre className="overflow-auto rounded-md border bg-muted/40 p-4 text-sm">{JSON.stringify(document.payload, null, 2)}</pre></CardContent>
+                <CardContent><pre className={"overflow-auto rounded-md border bg-muted/40 p-4 text-sm"}>{JSON.stringify(document.payload, null, 2)}</pre></CardContent>
             </Card>
-            <Card className="mt-4">
+            <Card className={"mt-4"}>
                 <CardHeader>
-                    <ShieldCheck className="size-5 text-primary" />
-                    <CardTitle className="text-base">Read only, and only this once</CardTitle>
-                    <CardDescription>This access authorizes no draft, no addendum, and no further read. Request an accepted Clinical Handoff for continuing care.</CardDescription>
+                    <ShieldCheck className={"size-5 text-primary"} />
+                    <CardTitle className={"text-base"}>{t("break_glass.read_only_and_only")}</CardTitle>
+                    <CardDescription>{t("break_glass.this_access_authorizes_no")}</CardDescription>
                 </CardHeader>
-                <CardContent><Button asChild variant="outline"><Link href={route("clinicaldocumentation.index")}>Back to documents</Link></Button></CardContent>
+                <CardContent><Button asChild variant={"outline"}><Link href={route("clinicaldocumentation.index")}>{t("break_glass.back_to_documents")}</Link></Button></CardContent>
             </Card>
         </>
         : <Card>
             <CardHeader>
-                <CardTitle>Signed clinical document {documentId}</CardTitle>
-                <CardDescription>State the emergency reason in the action panel to open this record. Nothing is disclosed until a reason is recorded.</CardDescription>
+                <CardTitle>{t("break_glass.signed_document_title", { id: documentId })}</CardTitle>
+                <CardDescription>{t("break_glass.state_the_emergency_reason")}</CardDescription>
             </CardHeader>
         </Card>}
 </>;
+};
 
 BreakGlass.layout = (page: ReactNode) => {
     const props = ((page as { props?: BreakGlassProps }).props ?? page) as BreakGlassProps;

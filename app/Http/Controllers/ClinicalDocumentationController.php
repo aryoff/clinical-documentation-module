@@ -39,7 +39,10 @@ use Modules\ClinicalDocumentation\Services\PresentedExternalEvidenceService;
 
 class ClinicalDocumentationController extends Controller
 {
-    private const IMMUTABLE_NOTICE = "Signed clinical documents are immutable; create an addendum.";
+    private function immutableNotice(): string
+    {
+        return __("clinicaldocumentation::messages.immutable_notice");
+    }
 
     /** Flashed by a refused edit and rendered by `show` as the addendum prompt. */
     private const IMMUTABLE_NOTICE_KEY = "immutabilityNotice";
@@ -92,7 +95,7 @@ class ClinicalDocumentationController extends Controller
             )
             ->with(
                 "success",
-                "Presented external evidence staged for clinician review.",
+                __("clinicaldocumentation::messages.evidence_staged"),
             );
     }
 
@@ -107,7 +110,7 @@ class ClinicalDocumentationController extends Controller
             ->route("clinicaldocumentation.edit", $documentId)
             ->with(
                 "success",
-                "Presented external evidence reviewed during clinical authoring.",
+                __("clinicaldocumentation::messages.evidence_reviewed"),
             );
     }
 
@@ -126,7 +129,7 @@ class ClinicalDocumentationController extends Controller
             ->route("clinicaldocumentation.edit", $documentId)
             ->with(
                 "success",
-                "Incorporation decision recorded during clinical authoring.",
+                __("clinicaldocumentation::messages.incorporation_recorded"),
             )
             ->with("presentedExternalEvidenceIncorporated", true);
     }
@@ -187,7 +190,7 @@ class ClinicalDocumentationController extends Controller
                 ->route("clinicaldocumentation.index")
                 ->with(
                     "error",
-                    "Clinical authoring requires an accepted Clinical Handoff.",
+                    __("clinicaldocumentation::messages.handoff_required"),
                 );
         }
 
@@ -207,7 +210,7 @@ class ClinicalDocumentationController extends Controller
 
         return redirect()
             ->route("clinicaldocumentation.edit", $document["document_id"])
-            ->with("success", "Private clinical document draft created.");
+            ->with("success", __("clinicaldocumentation::messages.draft_created"));
     }
 
     public function show(
@@ -229,7 +232,7 @@ class ClinicalDocumentationController extends Controller
                     ->route("clinicaldocumentation.break-glass.create", $id)
                     ->with(
                         "error",
-                        "You have no treatment relationship with this record. Emergency access requires a reasoned Break-Glass.",
+                        __("clinicaldocumentation::messages.no_relationship_break_glass"),
                     );
             }
 
@@ -270,7 +273,7 @@ class ClinicalDocumentationController extends Controller
         if ($document->status !== "draft") {
             return redirect()
                 ->route("clinicaldocumentation.show", $id)
-                ->with(self::IMMUTABLE_NOTICE_KEY, self::IMMUTABLE_NOTICE);
+                ->with(self::IMMUTABLE_NOTICE_KEY, $this->immutableNotice());
         }
 
         return Inertia::render("ClinicalDocumentation::Edit", [
@@ -303,7 +306,7 @@ class ClinicalDocumentationController extends Controller
         if ($this->authoredDocument($request, $id)->status !== "draft") {
             return redirect()
                 ->route("clinicaldocumentation.show", $id)
-                ->with(self::IMMUTABLE_NOTICE_KEY, self::IMMUTABLE_NOTICE);
+                ->with(self::IMMUTABLE_NOTICE_KEY, $this->immutableNotice());
         }
 
         $this->records->updateDraft(
@@ -313,7 +316,7 @@ class ClinicalDocumentationController extends Controller
         );
 
         return back()
-            ->with("success", "Clinical document draft updated.")
+            ->with("success", __("clinicaldocumentation::messages.draft_updated"))
             ->with("clinicalDocumentDraftUpdated", true);
     }
 
@@ -329,12 +332,12 @@ class ClinicalDocumentationController extends Controller
         if ($document->status !== "draft") {
             return redirect()
                 ->route("clinicaldocumentation.show", $id)
-                ->with(self::IMMUTABLE_NOTICE_KEY, self::IMMUTABLE_NOTICE);
+                ->with(self::IMMUTABLE_NOTICE_KEY, $this->immutableNotice());
         }
         if ($document->payload === []) {
             return back()->withErrors([
                 "payload" =>
-                    "A clinical document cannot be signed with an empty payload.",
+                    __("clinicaldocumentation::messages.cannot_sign_empty"),
             ]);
         }
 
@@ -342,7 +345,7 @@ class ClinicalDocumentationController extends Controller
 
         return redirect()
             ->route("clinicaldocumentation.show", $id)
-            ->with("success", "Clinical document signed and locked.");
+            ->with("success", __("clinicaldocumentation::messages.document_signed"));
     }
 
     public function amend(
@@ -364,7 +367,7 @@ class ClinicalDocumentationController extends Controller
             ->route("clinicaldocumentation.show", $id)
             ->with(
                 "success",
-                "Signed addendum recorded without changing the source document.",
+                __("clinicaldocumentation::messages.addendum_signed"),
             );
     }
 
@@ -413,7 +416,7 @@ class ClinicalDocumentationController extends Controller
         abort_unless(
             $document->author_id === (string) $request->user()->id,
             403,
-            "Only the author of a signed clinical document may request its archive package.",
+            __("clinicaldocumentation::messages.archive_author_only"),
         );
 
         $package = $this->records->archiveDocument(
@@ -425,7 +428,7 @@ class ClinicalDocumentationController extends Controller
             ->route("clinicaldocumentation.show", $id)
             ->with(
                 "success",
-                "Archive package requested; custody is {$package["custody_state"]}.",
+                __("clinicaldocumentation::messages.archive_requested", ['state' => __("clinicaldocumentation::messages.custody_state_" . $package["custody_state"])]),
             );
     }
 
@@ -452,7 +455,7 @@ class ClinicalDocumentationController extends Controller
             ->route("clinicaldocumentation.show", $id)
             ->with(
                 "success",
-                "Diagnosis {$assertion["code"]} recorded as {$assertion["assertion_type"]} revision {$assertion["revision"]}.",
+                __("clinicaldocumentation::messages.diagnosis_recorded", ['code' => $assertion["code"], 'type' => __("clinicaldocumentation::messages.assertion_type_" . $assertion["assertion_type"]), 'revision' => $assertion["revision"]]),
             );
     }
 
@@ -503,7 +506,7 @@ class ClinicalDocumentationController extends Controller
 
     public function destroy(string $id): never
     {
-        abort(405, "Clinical documents are never deleted.");
+        abort(405, __("clinicaldocumentation::messages.never_deleted"));
     }
 
     private function authoredDocument(

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Com
 import { Input } from "@/Components/ui/input";
 import { Textarea } from "@/Components/ui/textarea";
 import { Label } from "@/Components/ui/label";
+import { useModuleT } from "@/hooks/useModuleT";
 
 type Evidence = {
     id: string;
@@ -25,6 +26,7 @@ type CreateProps = {
 };
 
 const EvidenceForm = ({ registrationId }: { registrationId: string }) => {
+  const { t } = useModuleT();
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [submissionError, setSubmissionError] = useState<string | null>(null);
 
@@ -36,58 +38,64 @@ const EvidenceForm = ({ registrationId }: { registrationId: string }) => {
         });
     };
 
-    return <form className="space-y-4 p-5" method="post" encType="multipart/form-data" onSubmit={submit}>
-        <input type="hidden" name="registration_id" value={registrationId} />
+    return <form className={"space-y-4 p-5"} method={"post"} encType={"multipart/form-data"} onSubmit={submit}>
+        <input type={"hidden"} name={"registration_id"} value={registrationId} />
         <div>
-            <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Registration evidence</p>
-            <h2 className="mt-2 font-semibold text-foreground">Stage patient-provided evidence</h2>
+            <p className={"text-xs font-semibold tracking-wider text-muted-foreground uppercase"}>{t("create.registration_evidence")}</p>
+            <h2 className={"mt-2 font-semibold text-foreground"}>{t("create.stage_patient_provided_evidence")}</h2>
         </div>
-        <div className="space-y-2">
-            <Label htmlFor="claim">What the patient says this file is</Label>
-            <Textarea id="claim" name="claim" required placeholder="Patient says this is an external laboratory report..." />
+        <div className={"space-y-2"}>
+            <Label htmlFor={"claim"}>{t("create.what_the_patient_says")}</Label>
+            <Textarea id={"claim"} name={"claim"} required placeholder={t("create.patient_says_this_is")} />
         </div>
-        <div className="space-y-2">
-            <Label htmlFor="file">Upload file or scan</Label>
-            <Input id="file" name="file" required type="file" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} />
-            {selectedFile && <p className="text-sm text-muted-foreground">Selected: {selectedFile.name}</p>}
-            <p className="text-xs text-muted-foreground">This stores custody facts only. A clinician decides what, if anything, belongs in the clinical document.</p>
+        <div className={"space-y-2"}>
+            <Label htmlFor={"file"}>{t("create.upload_file_or_scan")}</Label>
+            <Input id={"file"} name={"file"} required type={"file"} onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} />
+            {selectedFile && <p className={"text-sm text-muted-foreground"}>{t("create.selected_file", { name: selectedFile.name })}</p>}
+            <p className={"text-xs text-muted-foreground"}>{t("create.this_stores_custody_facts")}</p>
         </div>
-        {submissionError && <p id="staging-error" className="text-sm text-destructive">{submissionError}</p>}
-        <Button id="stage-external-evidence" type="submit" className="w-full"><FileUp className="mr-1 size-4" />Stage external evidence</Button>
+        {submissionError && <p id={"staging-error"} className={"text-sm text-destructive"}>{submissionError}</p>}
+        <Button id={"stage-external-evidence"} type={"submit"} className={"w-full"}><FileUp className={"mr-1 size-4"} />{t("create.stage_external_evidence")}</Button>
     </form>;
 };
 
-const Create = ({ registrationId, evidence }: CreateProps) => <>
-    <Head title="Stage external evidence" />
-    <div className="space-y-6">
+const Create = ({ registrationId, evidence }: CreateProps) => {
+  const { t } = useModuleT();
+  return <>
+    <Head title={t("create.stage_external_evidence")} />
+    <div className={"space-y-6"}>
         <Card>
             <CardHeader>
-                <ShieldCheck className="size-5 text-primary" />
-                <CardTitle>Custody staging</CardTitle>
-                <CardDescription>Registration <code className="rounded bg-muted px-2 py-1 text-xs">{registrationId}</code>. Staging does not interpret, verify, or incorporate the file.</CardDescription>
+                <ShieldCheck className={"size-5 text-primary"} />
+                <CardTitle>{t("create.custody_staging")}</CardTitle>
+                <CardDescription>{t("create.registration_label")} <code className={"rounded bg-muted px-2 py-1 text-xs"}>{registrationId}</code>{t("create.staging_note")}</CardDescription>
             </CardHeader>
             <CardContent><EvidenceForm registrationId={registrationId} /></CardContent>
         </Card>
         <Card>
             <CardHeader>
-                <CardTitle>Unreviewed evidence</CardTitle>
-                <CardDescription>Only a clinician authoring this registration can review these items.</CardDescription>
+                <CardTitle>{t("create.unreviewed_evidence")}</CardTitle>
+                <CardDescription>{t("create.only_a_clinician_authoring")}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-                {evidence.length === 0 ? <p className="text-sm text-muted-foreground">No evidence has been staged yet.</p> : evidence.map((item) => <div key={item.id} className="rounded-md border p-4" data-testid="staged-external-evidence">
-                    <p className="font-medium">{item.claim}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{item.original_filename ?? "Uploaded file"} · staged by {item.staged_by_name}</p>
-                    {item.can_open_file && route().has("clinicaldocumentation.presented-external-evidence.file") && <Button asChild className="mt-3" size="sm" variant="outline"><a href={item.file_url}>Open staged file</a></Button>}
+            <CardContent className={"space-y-3"}>
+                {evidence.length === 0 ? <p className={"text-sm text-muted-foreground"}>{t("create.no_evidence_has_been")}</p> : evidence.map((item) => <div key={item.id} className={"rounded-md border p-4"} data-testid={"staged-external-evidence"}>
+                    <p className={"font-medium"}>{item.claim}</p>
+                    <p className={"mt-1 text-sm text-muted-foreground"}>{t("shared.staged_by_line", { file: item.original_filename ?? t("create.uploaded_file"), name: item.staged_by_name })}</p>
+                    {item.can_open_file && route().has("clinicaldocumentation.presented-external-evidence.file") && <Button asChild className={"mt-3"} size={"sm"} variant={"outline"}><a href={item.file_url}>{t("create.open_staged_file")}</a></Button>}
                 </div>)}
             </CardContent>
         </Card>
     </div>
 </>;
+};
 
-Create.layout = (page: ReactNode) => <AuthenticatedLayout header="Stage external evidence">
-    <Content description="Stage a patient-provided file during an active Hospital Registration for a clinician to review during authoring.">
-        {page}
-    </Content>
+const CreateContent = ({ children }: { children: ReactNode }) => {
+    const { t } = useModuleT();
+    return <Content description={t("create.stage_a_patient_provided")}>{children}</Content>;
+};
+
+Create.layout = (page: ReactNode) => <AuthenticatedLayout header={(t) => t("create.stage_external_evidence")}>
+    <CreateContent>{page}</CreateContent>
 </AuthenticatedLayout>;
 
 export default Create;

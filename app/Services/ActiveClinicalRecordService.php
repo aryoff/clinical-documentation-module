@@ -269,7 +269,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             }
             if ($document->payload === []) {
                 throw new \InvalidArgumentException(
-                    "A clinical document cannot be signed with an empty payload.",
+                    __("clinicaldocumentation::messages.cannot_sign_empty"),
                 );
             }
 
@@ -499,13 +499,13 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             ) !== 1
         ) {
             throw new \InvalidArgumentException(
-                "Diagnosis Assertions require a valid ICD-10 code snapshot.",
+                __("clinicaldocumentation::messages.diagnosis_needs_icd"),
             );
         }
         $assertionType = $command["assertion_type"];
         if (!in_array($assertionType, self::ASSERTION_TYPES, true)) {
             throw new \InvalidArgumentException(
-                "A Diagnosis Assertion is initial, supplement, or supersession.",
+                __("clinicaldocumentation::messages.diagnosis_type_invalid"),
             );
         }
         $evidenceIds = $this->citedEvidenceIds($command, $document->patient_id);
@@ -524,12 +524,12 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
 
             if ($assertionType === "initial" && $openedJourney) {
                 throw new \LogicException(
-                    "This care journey already carries an initial Diagnosis Assertion; supplement or supersede it instead.",
+                    __("clinicaldocumentation::messages.diagnosis_initial_exists"),
                 );
             }
             if ($assertionType !== "initial" && !$openedJourney) {
                 throw new \LogicException(
-                    "The first Diagnosis Assertion for a care journey must be an initial assertion.",
+                    __("clinicaldocumentation::messages.diagnosis_first_must_be_initial"),
                 );
             }
 
@@ -904,7 +904,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         }
         if (!is_array($ids) || array_filter($ids, "is_string") !== $ids) {
             throw new \InvalidArgumentException(
-                "Diagnosis evidence citations must be a list of evidence IDs.",
+                __("clinicaldocumentation::messages.evidence_citations_list"),
             );
         }
 
@@ -916,7 +916,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             ->all();
         if (count($found) !== count($ids)) {
             throw new \InvalidArgumentException(
-                "A Diagnosis Assertion may only cite Diagnostic Result Evidence recorded for the same patient.",
+                __("clinicaldocumentation::messages.diagnosis_evidence_other_patient"),
             );
         }
 
@@ -934,7 +934,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             ->first();
         if ($predecessor === null) {
             throw new \InvalidArgumentException(
-                "The superseded Diagnosis Assertion does not belong to this patient.",
+                __("clinicaldocumentation::messages.superseded_other_patient"),
             );
         }
         if (
@@ -943,7 +943,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
                 ->exists()
         ) {
             throw new \LogicException(
-                "That Diagnosis Assertion has already been superseded; supersede the current one instead.",
+                __("clinicaldocumentation::messages.already_superseded"),
             );
         }
 
@@ -1162,7 +1162,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         $this->assertDocumentAuthor($document, $actorId);
         if ($document->status !== "signed") {
             throw new \LogicException(
-                "Clinical safety facts and archive requests require a signed document.",
+                __("clinicaldocumentation::messages.signed_document_required"),
             );
         }
 
@@ -1175,7 +1175,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
     ): void {
         if ($document->author_id !== $actorId) {
             throw new AuthorizationException(
-                "Only the clinical document author may perform this action.",
+                __("clinicaldocumentation::messages.author_only_action"),
             );
         }
     }
