@@ -22,3 +22,6 @@ Preferred Indonesian wording for the ClinicalDocumentation UI. `provisional` ter
 | Template | Templat | — | provisional | — |
 | Administration (of medicine) | Pemberian (obat) | Administrasi | provisional | — |
 | Order (clinical order) | Order | Perintah | provisional | — |
+| ClinicalDocumentation (menu) | Dokumentasi Klinis | — | provisional | — |
+| EMR Notes Dashboard (menu) | Dasbor Catatan RME | — | provisional | — |
+| Clinical Access Audit (menu) | Audit Akses Klinis | — | provisional | — |

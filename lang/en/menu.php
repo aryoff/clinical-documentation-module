@@ -1,8 +1,10 @@
 <?php
 
+// Menu labels, referenced from module.json as "ClinicalDocumentation::menu.<key>".
 return [
-    // Menu titles from module.json, used as keys by the shell.
-    "ClinicalDocumentation" => "ClinicalDocumentation",
-    "EMR Notes Dashboard" => "EMR Notes Dashboard",
-    "Clinical Access Audit" => "Clinical Access Audit",
+    "menu" => [
+        "clinicaldocumentation" => "ClinicalDocumentation",
+        "emr_notes_dashboard" => "EMR Notes Dashboard",
+        "clinical_access_audit" => "Clinical Access Audit",
+    ],
 ];

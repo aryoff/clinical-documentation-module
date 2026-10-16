@@ -103,19 +103,19 @@
     },
     "menuStructure": [
         {
-            "title": "ClinicalDocumentation",
+            "title": "ClinicalDocumentation::menu.clinicaldocumentation",
             "name": "clinicaldocumentation",
             "parent": true,
             "icon": "FileText",
             "child": [
                 {
-                    "title": "EMR Notes Dashboard",
+                    "title": "ClinicalDocumentation::menu.emr_notes_dashboard",
                     "name": "clinicaldocumentation.index",
                     "routeName": "clinicaldocumentation.index",
                     "icon": "List"
                 },
                 {
-                    "title": "Clinical Access Audit",
+                    "title": "ClinicalDocumentation::menu.clinical_access_audit",
                     "name": "clinicaldocumentation.audit",
                     "routeName": "clinicaldocumentation.audit",
                     "icon": "ShieldCheck"
