@@ -62,9 +62,9 @@ test('a clinician records a diagnosis, revises it, and both revisions stay reada
         ->assertSee('Accepted Clinical Handoff')
         ->fill('#payload', '{"subjective": "Fever and productive cough."}')
         ->press('Create private draft')
-        ->waitForText('Continue authoring')
+        ->assertSee('Continue authoring')
         ->press('Sign and lock')
-        ->waitForText('Immutable source');
+        ->assertSee('Immutable source');
 
     // Nothing asserted yet, so the panel says so and offers only `initial`.
     $page->assertSee('No diagnosis has been asserted for this patient yet.');
@@ -74,7 +74,7 @@ test('a clinician records a diagnosis, revises it, and both revisions stay reada
         ->press('#record_diagnosis')
         // The badge an asserted head carries. The panel heading "Diagnosis" is
         // on screen before this and would pass instantly.
-        ->waitForText('Current diagnosis')
+        ->assertSee('Current diagnosis')
         ->assertSee('J18.9')
         ->assertDontSee('No diagnosis has been asserted');
 
@@ -101,7 +101,7 @@ test('a clinician records a diagnosis, revises it, and both revisions stay reada
         // "Superseded" is the badge the *predecessor* gains, so it cannot
         // appear until the append has actually happened. The new code would be
         // on screen the moment it was typed.
-        ->waitForText('Superseded')
+        ->assertSee('Superseded')
         ->assertSee('J15.9')
         // The corrected assertion is still there. This is the whole point.
         ->assertSee('J18.9')
@@ -116,7 +116,7 @@ test('a clinician records a diagnosis, revises it, and both revisions stay reada
 
     // The Clinical Diagnosis Read shows the same history without the note.
     $page->navigate("/clinical-documentation/patients/{$patientId}/diagnoses")
-        ->waitForText('Current diagnoses')
+        ->assertSee('Current diagnoses')
         ->assertSee('J15.9')
         ->assertSee('J18.9')
         ->assertDontSee('Fever and productive cough.')

@@ -50,11 +50,11 @@ test(
             ->fill("Password", "password")
             ->press("Log in")
             ->navigate("/clinicaldocumentation")
-            ->waitForText("Active clinical records")
+            ->assertSee("Active clinical records")
             ->click(
                 'a[href$="/patients/' . $original["patient_id"] . '/record"]',
             )
-            ->waitForText("Medication administration")
+            ->assertSee("Medication administration")
             ->assertSee("Paracetamol · Given")
             ->assertSee("500 mg")
             ->assertSee("250 mg")

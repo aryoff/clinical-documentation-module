@@ -64,7 +64,7 @@ test('a clinician drafts, signs, is refused an edit, and records an addendum', f
         ->assertSee($handoff['handoff_id'])
         ->fill('Clinical payload', '{"subjective": "Persistent headache for three days"}')
         ->press('Create private draft')
-        ->waitForText('Continue authoring')
+        ->assertSee('Continue authoring')
         ->assertSee('Draft protection');
 
     $document = ClinicalDocument::query()->where('handoff_id', $handoff['handoff_id'])->sole();
@@ -74,25 +74,25 @@ test('a clinician drafts, signs, is refused an edit, and records an addendum', f
 
     // Signing locks the source permanently.
     $page->press('Sign and lock')
-        ->waitForText('Immutable source')
+        ->assertSee('Immutable source')
         ->assertSee('Persistent headache for three days');
 
     expect($document->refresh()->status)->toBe('signed');
 
     // The edit form is now refused, and the refusal names the addendum.
     $page->navigate("/clinicaldocumentation/{$document->id}/edit")
-        ->waitForText('Signed clinical documents are immutable; create an addendum.')
+        ->assertSee('Signed clinical documents are immutable; create an addendum.')
         ->assertSee('The signed source stays exactly as you signed it.')
         ->assertDontSee('Continue authoring');
 
     // The addendum is a separate signed record that leaves its source intact.
     $page->navigate("/clinicaldocumentation/{$document->id}")
-        ->waitForText('Immutable source')
+        ->assertSee('Immutable source')
         ->press('Add addendum')
         ->fill('Reason', 'Clarifies the reported symptom duration.')
         ->fill('Addendum payload', '{"clarification": "Symptoms started three days ago."}')
         ->press('Record signed addendum')
-        ->waitForText('Immutable source')
+        ->assertSee('Immutable source')
         ->assertSee('Persistent headache for three days')
         ->assertNoJavaScriptErrors();
 
