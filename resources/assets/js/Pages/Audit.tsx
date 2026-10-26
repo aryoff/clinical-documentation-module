@@ -28,7 +28,7 @@ type AuditProps = {
     filters: { document_id: string | null; patient_id: string | null };
 };
 
-function AuditActionBar({ filters }: Pick<AuditProps, "filters">) {
+const AuditActionBar = ({ filters }: Pick<AuditProps, "filters">) => {
   const { t } = useModuleT();
     return <aside className={"space-y-6 p-5 text-sm"}>
         <div>
@@ -42,7 +42,7 @@ function AuditActionBar({ filters }: Pick<AuditProps, "filters">) {
             <Button asChild variant={"outline"} className={"mt-3 w-full"}><Link href={route("clinicaldocumentation.audit")}>{t("audit.show_every_record")}</Link></Button>
         </div>}
     </aside>;
-}
+};
 
 const Audit = ({ events }: Pick<AuditProps, "events">) => {
   const { t } = useModuleT();

@@ -22,7 +22,7 @@ type Document = {
   signed_at: string | null;
 };
 
-function WorkflowActionBar() {
+const WorkflowActionBar = () => {
   const { t } = useModuleT();
   return (
     <aside className={"space-y-6 p-5 text-sm"}>
@@ -40,7 +40,7 @@ function WorkflowActionBar() {
       </div>
     </aside>
   );
-}
+};
 
 const DocumentCard = ({ document }: { document: Document }) => {
   const { t } = useModuleT();

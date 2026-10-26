@@ -14,7 +14,11 @@ import { useZiggy } from "@/Context/ZiggyContext";
  * ready again, and expanding on that second ready would reopen a panel the user
  * had closed.
  */
-export default function ExpandActionBarWhenReady({ panel }: { panel: RefObject<ActionBarHandle | null> }) {
+const ExpandActionBarWhenReady = ({
+  panel,
+}: {
+  panel: RefObject<ActionBarHandle | null>;
+}) => {
     const { status } = useZiggy();
     const expanded = useRef(false);
 
@@ -26,4 +30,5 @@ export default function ExpandActionBarWhenReady({ panel }: { panel: RefObject<A
     }, [status, panel]);
 
     return null;
-}
+};
+export default ExpandActionBarWhenReady;

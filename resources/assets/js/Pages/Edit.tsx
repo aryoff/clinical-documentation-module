@@ -18,7 +18,7 @@ type ReviewedExternalEvidence = PresentedExternalEvidence & { incorporated: bool
 type EditProps = { document: Document; presentedExternalEvidence: PresentedExternalEvidence[]; reviewedExternalEvidence: ReviewedExternalEvidence[]; presentedExternalEvidenceIncorporated: boolean; clinicalDocumentDraftUpdated: boolean };
 type ClinicalDocumentForm = { payload: Record<string, any>; encountered_at: string };
 
-function EditActionBar({ document }: { document: Document }) {
+const EditActionBar = ({ document }: { document: Document }) => {
   const { t } = useModuleT();
     const { put, processing, transform } = useForm<ClinicalDocumentForm>({
         payload: document.payload,
@@ -68,16 +68,22 @@ function EditActionBar({ document }: { document: Document }) {
                 <FileLock2 className={"mr-1 size-4"} />{t("edit.sign_and_lock")}</Button>
         </>}
     </form>;
-}
+};
 
-function EditLayout({ page, document }: { page: ReactNode; document: Document }) {
+const EditLayout = ({
+  page,
+  document,
+}: {
+  page: ReactNode;
+  document: Document;
+}) => {
     const panel = useRef<ActionBarHandle>(null);
 
     return <AuthenticatedLayout header={(t) => t("edit.edit_clinical_draft")}>
         <ExpandActionBarWhenReady panel={panel} />
         <Content actionBar={<EditActionBar document={document} />} actionBarRef={panel}>{page}</Content>
     </AuthenticatedLayout>;
-}
+};
 
 const Edit = ({ document, presentedExternalEvidence, reviewedExternalEvidence, presentedExternalEvidenceIncorporated, clinicalDocumentDraftUpdated }: EditProps) => {
   const { t } = useModuleT();

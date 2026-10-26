@@ -24,7 +24,7 @@ type BreakGlassDocument = {
 };
 type BreakGlassProps = { documentId: string; document?: BreakGlassDocument };
 
-function BreakGlassActionBar({ documentId }: BreakGlassProps) {
+const BreakGlassActionBar = ({ documentId }: BreakGlassProps) => {
   const { t } = useModuleT();
     const { data, post, processing, setData, errors } = useForm({ reason: "" });
 
@@ -46,16 +46,22 @@ function BreakGlassActionBar({ documentId }: BreakGlassProps) {
         {errors.reason && <p className={"text-sm text-destructive"}>{errors.reason}</p>}
         <Button className={"w-full"} variant={"destructive"} disabled={processing}>{t("break_glass.break_glass_and_record")}</Button>
     </form>;
-}
+};
 
-function BreakGlassLayout({ page, documentId }: { page: ReactNode; documentId: string }) {
+const BreakGlassLayout = ({
+  page,
+  documentId,
+}: {
+  page: ReactNode;
+  documentId: string;
+}) => {
     const panel = useRef<ActionBarHandle>(null);
 
     return <AuthenticatedLayout header={(t) => t("break_glass.emergency_clinical_access")}>
         <ExpandActionBarWhenReady panel={panel} />
         <Content actionBar={<BreakGlassActionBar documentId={documentId} />} actionBarRef={panel}>{page}</Content>
     </AuthenticatedLayout>;
-}
+};
 
 const BreakGlass = ({ documentId, document }: BreakGlassProps) => {
   const { t } = useModuleT();

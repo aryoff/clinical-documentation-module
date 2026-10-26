@@ -40,7 +40,15 @@ type ShowProps = {
  * current. The supersession target list therefore offers heads only — a
  * revision that has already been corrected is not a thing to correct again.
  */
-function DiagnosisPanel({ document, diagnoses, canAssert }: { document: Document; diagnoses: DiagnosisLineage; canAssert: boolean }) {
+const DiagnosisPanel = ({
+  document,
+  diagnoses,
+  canAssert,
+}: {
+  document: Document;
+  diagnoses: DiagnosisLineage;
+  canAssert: boolean;
+}) => {
   const { t } = useModuleT();
     const heads = diagnoses.current;
     const [chosenType, setChosenType] = useState("initial");
@@ -111,9 +119,9 @@ function DiagnosisPanel({ document, diagnoses, canAssert }: { document: Document
             </form>}
         </CardContent>
     </Card>;
-}
+};
 
-function AddendumActionBar({ document }: Pick<ShowProps, "document">) {
+const AddendumActionBar = ({ document }: Pick<ShowProps, "document">) => {
   const { t } = useModuleT();
     const [reason, setReason] = useState("");
     const [payload, setPayload] = useState("{}");
@@ -148,9 +156,15 @@ function AddendumActionBar({ document }: Pick<ShowProps, "document">) {
         </div>
         <Button className={"w-full"}>{t("show.record_signed_addendum")}</Button>
     </form>;
-}
+};
 
-function ShowLayout({ page, document }: { page: ReactNode; document: Document }) {
+const ShowLayout = ({
+  page,
+  document,
+}: {
+  page: ReactNode;
+  document: Document;
+}) => {
     const panel = useRef<ActionBarHandle>(null);
 
     useEffect(() => {
@@ -169,7 +183,7 @@ function ShowLayout({ page, document }: { page: ReactNode; document: Document })
     return <AuthenticatedLayout header={(t) => t("show.clinical_document")}>
         <Content actionBar={canAmend ? <AddendumActionBar document={document} /> : undefined} actionBarRef={panel}>{page}</Content>
     </AuthenticatedLayout>;
-}
+};
 
 const Show = ({ document, immutabilityNotice, canArchive, canAssertDiagnosis, diagnoses }: ShowProps) => {
   const { t } = useModuleT();

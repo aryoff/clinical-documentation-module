@@ -53,7 +53,11 @@ export type DiagnosisLineage = {
  * diagnosis is history rather than a mistake to hide, so nothing here is
  * collapsed away — only the head is marked as the one that still counts.
  */
-export function DiagnosisLineageView({ lineage }: { lineage: DiagnosisLineage }) {
+export const DiagnosisLineageView = ({
+  lineage,
+}: {
+  lineage: DiagnosisLineage;
+}) => {
   const { t } = useModuleT();
     if (lineage.lineages.length === 0) {
         return <p className={"text-sm text-muted-foreground"} id={"diagnosis_lineage_empty"}>{t("diagnosis_lineage.no_diagnosis_has_been")}</p>;
@@ -89,4 +93,4 @@ export function DiagnosisLineageView({ lineage }: { lineage: DiagnosisLineage })
             </CardContent>
         </Card>)}
     </div>;
-}
+};

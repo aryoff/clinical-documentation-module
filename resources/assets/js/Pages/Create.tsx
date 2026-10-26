@@ -21,7 +21,7 @@ type ClinicalDocumentForm = {
     payload: Record<string, any>;
 };
 
-function CreateActionBar({ handoffId }: CreateProps) {
+const CreateActionBar = ({ handoffId }: CreateProps) => {
   const { t } = useModuleT();
     const { data, post, processing, setData, transform, errors } = useForm<ClinicalDocumentForm>({
         handoff_id: handoffId,
@@ -72,16 +72,22 @@ function CreateActionBar({ handoffId }: CreateProps) {
         {Object.values(errors).map((error) => <p key={String(error)} className={"text-sm text-destructive"}>{String(error)}</p>)}
         <Button className={"w-full"} disabled={processing}>{t("create.create_private_draft")}</Button>
     </form>;
-}
+};
 
-function CreateLayout({ page, handoffId }: { page: ReactNode; handoffId: string }) {
+const CreateLayout = ({
+  page,
+  handoffId,
+}: {
+  page: ReactNode;
+  handoffId: string;
+}) => {
     const panel = useRef<ActionBarHandle>(null);
 
     return <AuthenticatedLayout header={(t) => t("create.new_clinical_document")}>
         <ExpandActionBarWhenReady panel={panel} />
         <Content actionBar={<CreateActionBar handoffId={handoffId} />} actionBarRef={panel}>{page}</Content>
     </AuthenticatedLayout>;
-}
+};
 
 const Create = ({ handoffId }: CreateProps) => {
   const { t } = useModuleT();
