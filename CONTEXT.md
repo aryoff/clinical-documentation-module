@@ -58,6 +58,15 @@ The optional archive projection of finalized signed-document chains and structur
 **Clinical Record Release Capability**:
 A short-lived authorization for a named user and purpose to release a bounded encrypted record or archive package.
 
+**Clinical Information Disclosure Authorization**:
+The ClinicalDocumentation-owned decision authorizing a specified disclosure of clinical information to a recipient on an established basis, covering the exact result version delivered and current authority at handover. It is distinct from staff clinical-read permission and treatment-action consent; an amendment requires a fresh decision without necessarily requiring new consent.
+
+**Clinical Disclosure Consent**:
+The patient authorization whose evidence ClinicalDocumentation owns when disclosure depends on consent, identifying the recipient, purpose, permitted result scope and validity. Withdrawal or expiry prevents later handovers without rewriting completed disclosure history; general registration or treatment consent is not a substitute.
+
+**Clinical Disclosure Request**:
+The recorded request for a specified disclosure, with recipient identity verification and evidence of its actual basis: self-access, patient authorization, established representative authority or a specific statutory basis. ClinicalDocumentation owns the request evidence and decision; a basis not dependent on patient consent carries its own evidence rather than fabricated consent.
+
 **Clinical File Staging**:
 A short-lived protected FileVault object used to validate and encrypt a clinical artifact before verified archive custody.
 
@@ -88,13 +97,28 @@ A signed summary that a later signed document postdates. The completion outcome 
 **Local Clinical Retention**:
 The sealed, access-controlled retention of finalized Clinical Documents and their addendum chains when MedicalRecords is not installed, providing required custody without an external archive provider.
 
+**Clinical Record Destruction Authorization**:
+The ClinicalDocumentation-owned decision permitting destruction of specified clinical record content after applicable retention and legal-hold conditions clear. Authorization is distinct from each custodian's execution and evidence of destruction.
+
+**Clinical Record Legal Hold**:
+The ClinicalDocumentation-owned prohibition on destruction of a patient's retained clinical records or a specified record set, carrying its reason, responsible actor and history. Each hold remains effective until explicitly lifted, survives patient identity reconciliation, and applies independently of overlapping holds.
+
+**Clinical Record Retention Schedule**:
+The ClinicalDocumentation-owned, versioned policy specifying how long clinical record content must remain protected, with a minimum of 25 years from Patient Last Visit and any applicable extensions. A destruction decision cites the schedule version applied; a policy change cannot silently shorten existing protection.
+
 ## Relationships
+
+**Laboratory result authorization evidence** — Laboratory owns its final result and source authorization evidence, made available through versioned public contracts. This context consumes the authorized final projection without inventing another sign-off; a pending authorization candidate is not a finalized clinical-fact projection, and owed-delivery retries preserve the same source version and historical evidence. See #477.
+
+**Laboratory disclosure** — this context owns Clinical Disclosure Consent evidence and Clinical Information Disclosure Authorization, published through a declared Public Capability. Laboratory records its own delivery and result-access evidence; recipient relationship is distinct from disclosure basis, and family relationship alone grants no access. See root ADR 0034.
+
+**Laboratory retention / HospitalCore** — HospitalCore consolidates Patient Last Visit from care-context attendance evidence; this context uses it for authorization to destroy laboratory record content and its clinical projections. Each custodian executes destruction of its own stored content and supplies evidence. Laboratory never communicates directly with MedicalRecords; this context alone coordinates its optional vault counterpart and also handles local retention. See root ADR 0033.
 
 **OperatingRoom, Obstetrics, Radiology, Laboratory, and PhysicalTherapy** — each owns its own execution, birth, imaging, specimen, or session evidence and publishes immutable projections here. Authoring in this context requires that source's explicit clinical handoff; a projection never transfers ownership of the source record.
 
 **HospitalCore** — HospitalCore's bounded Morbidity Reporting subcontext consumes this context's immutable diagnosis facts through the named scalar capability and may cross-reference them with HospitalCore-owned historical registration, patient, and reference facts while processing. A valid hospital composition requires this context alongside HospitalCore; HospitalCore without ClinicalDocumentation is not a hospital. HospitalCore keeps its own append-only source-fact record and derived report view, counting one distinct registration/ICD pairing from each lineage's current head at an explicit cutoff. Its persisted and report-facing result is opaque, exposing only aggregates or opaque reporting references. Coverage begins at the first accepted diagnosis-fact stream boundary: registrations before it are history-unavailable rather than silently backfilled, and facts within a report cutoff count by registration period once accepted even when delivered late. Coverage start, source-completeness watermark, receipt/processing timestamps, and replay state make completeness operator-visible; statutory results remain explicitly incomplete until coverage is complete. Separately, HospitalCore may use this same diagnosis-fact capability in a distinct Claim/Readiness Monitoring projection for payer-backed registration cohorts. That monitor exposes only opaque readiness evidence, may identify missing diagnosis as a readiness reason, and does not expose clinical document payloads, create a Billable Service Fact, or decide a claim. HospitalCore owns the report and monitoring pages; Customer Fork Dashboard is not their reporting surface. This context remains the sole owner of Diagnosis Assertions, their lineage, and their source timestamps. The reporting and readiness projections do not become a diagnosis store, clinical-record layer, or direct reader of these tables.
 
-**InpatientCare** — the ward asks this context two questions and receives no clinical content for either: whether an accepted Clinical Handoff permits a clinician to author, and whether the episode's discharge documentation is complete. The second gates the ordinary discharge, so an incomplete summary keeps a patient in a bed. The ward owns the episode, the retention schedule for it and the audit of who read it; this context owns the documents and the release of them. Every supported composition with a ward carries this context, because a ward that documents nothing is not a hospital.
+**InpatientCare** — the ward asks this context two questions and receives no clinical content for either: whether an accepted Clinical Handoff permits a clinician to author, and whether the episode's discharge documentation is complete. The second gates the ordinary discharge, so an incomplete summary keeps a patient in a bed. The ward owns the episode, its frozen document pointers and the audit of who read it; this context owns the documents, retention schedules, holds and destruction authorization, using HospitalCore's patient-wide last-visit fact. The episode-local retention implementation requires migration under root ADR 0033. Every supported composition with a ward carries this context, because a ward that documents nothing is not a hospital.
 
 **MedicalRecords** — the optional ciphertext vault. This context alone communicates with it: ClinicalDocumentation holds the keys, encrypts every Clinical Payload before it leaves the application, keeps the archive manifest, and authorizes each bounded one-patient release. EPrescription and every other source context are not MedicalRecords clients. Vault absence means sealed Local Clinical Retention, never a blocked discharge.
 
