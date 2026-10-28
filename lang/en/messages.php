@@ -1,6 +1,9 @@
 <?php
 
 return [
+    "retention_below_floor" => "A retention schedule cannot be shorter than :years years.",
+    "retention_cannot_shorten" => "A new schedule version cannot be shorter than the current :years years.",
+    "retention_hold_already_lifted" => "That legal hold has already been lifted.",
     "evidence_staged" => "Presented external evidence staged for clinician review.",
     "evidence_reviewed" => "Presented external evidence reviewed during clinical authoring.",
     "incorporation_recorded" => "Incorporation decision recorded during clinical authoring.",

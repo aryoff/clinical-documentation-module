@@ -41,6 +41,26 @@ Three of this module's permissions are classified **clinical** in HospitalCore's
 - The chronological read includes signed documents/addenda and source facts, requires treating access, and logs its purpose. Its HTTP request also requires `records.read`.
 - An existing author-authorized `archiveDocument` request references the registration's administration projections. Repeating that intent can include late facts. Receipt alone requests no archive. Encryption, upload, verified custody and bounded release remain root #56; this change creates no local encryption or MedicalRecords client.
 
+## Clinical Record Retention (reporting stage)
+
+Root ADR 0033 / #473. This module owns the retention policy, the legal-hold register and the review; HospitalCore owns Patient
+Last Visit, and custodians (Laboratory and others) will execute destruction in a later stage.
+
+- **Schedules** (`cd_retention_schedules`): versioned, 25-year floor, a version may lengthen protection and never shorten it. Insert-only.
+  Every review cites the schedule version it applied.
+- **Holds** (`cd_legal_holds`, history in `cd_legal_hold_events`): the one authoritative register. A hold is lifted once and never edited or
+  removed; time never ends one; overlapping holds are independent. `ReassignReconciledPatient` refiles holds and extensions onto the
+  survivor, so a merge never loses protection.
+- **Extensions** (`cd_retention_extensions`): continuing usefulness, an explicit attributable decision with a reason and a future date.
+- **Review** (`ClinicalRecordRetentionReview`): eligible only when no blocker exists. Missing evidence (no schedule, no last-visit
+  provider, incomplete attendance coverage, unknown last visit) is a blocker, never a pass. Reaching a retention date permits review only.
+- **Destruction is not built.** `destruction_enabled` is hard-coded false and no code here removes anything; the destruction ticket
+  (clinical-documentation-module#8) owns the two-person authorization and the gate.
+- **Abilities** `clinicaldocumentation.retention.{view,schedule,hold,extend}` are checked in plain FormRequests. They are not clinical
+  authorities, and the ordinary record abilities confer none of them.
+- **Last visit by capability ID**: `PatientLastVisitPort` forwards to `hospitalcore.patient-last-visit` (optional); absence reads as
+  `last_visit_unavailable`.
+
 ## Clinical Audit Standards
 - **Access-as-Event (Log-on-Read)**: Every "Read" operation on a clinical document must be logged.
 - **Addendum-Only Immutability**: Once a clinical document is signed, it is immutable. Corrections must be created as linked `ClinicalAddendum` records that preserve the original. A *document* has no `superseded` state.

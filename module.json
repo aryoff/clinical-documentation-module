@@ -16,7 +16,11 @@
         "clinicaldocumentation.records.stage-external-evidence",
         "clinicaldocumentation.records.break-glass",
         "clinicaldocumentation.archive.manage",
-        "clinicaldocumentation.audit.view"
+        "clinicaldocumentation.audit.view",
+        "clinicaldocumentation.retention.view",
+        "clinicaldocumentation.retention.schedule",
+        "clinicaldocumentation.retention.hold",
+        "clinicaldocumentation.retention.extend"
     ],
     "dictionary": [],
     "require": [],
@@ -86,6 +90,13 @@
                 "consumerContractTest": "tests/Contract/EmergencyAccessReviewConsumerTest.php"
             },
             {
+                "id": "hospitalcore.patient-last-visit",
+                "version": "^1.0",
+                "mode": "sync",
+                "required": false,
+                "consumerContractTest": "tests/Contract/PatientLastVisitConsumerTest.php"
+            },
+            {
                 "id": "hospitalcore.patient-identity-reconciled",
                 "version": "^1.0",
                 "mode": "async",
@@ -119,6 +130,12 @@
                     "name": "clinicaldocumentation.audit",
                     "routeName": "clinicaldocumentation.audit",
                     "icon": "ShieldCheck"
+                },
+                {
+                    "title": "ClinicalDocumentation::menu.clinical_record_retention",
+                    "name": "clinicaldocumentation.retention",
+                    "routeName": "clinicaldocumentation.retention.index",
+                    "icon": "Clock"
                 }
             ]
         }

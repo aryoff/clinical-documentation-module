@@ -74,6 +74,11 @@ class ClinicalDocumentationServiceProvider extends ServiceProvider
     {
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
+        // Scoped: it answers from whichever composition is running, and a long-lived worker must not keep a stale one.
+        $this->app->scoped(
+            \Modules\ClinicalDocumentation\Contracts\PatientLastVisitPort::class,
+            \Modules\ClinicalDocumentation\Services\Capabilities\CapabilityPatientLastVisit::class,
+        );
         $this->app->singleton(
             ActiveClinicalRecordContract::class,
             ActiveClinicalRecordService::class,

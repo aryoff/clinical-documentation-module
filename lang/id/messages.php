@@ -1,6 +1,9 @@
 <?php
 
 return [
+    "retention_below_floor" => "Jadwal retensi tidak boleh kurang dari :years tahun.",
+    "retention_cannot_shorten" => "Versi jadwal baru tidak boleh lebih pendek dari :years tahun yang berlaku.",
+    "retention_hold_already_lifted" => "Penahanan hukum itu sudah dicabut.",
     "evidence_staged" => "Bukti eksternal yang dibawa pasien diunggah untuk ditinjau klinisi.",
     "evidence_reviewed" => "Bukti eksternal yang dibawa pasien ditinjau saat penyusunan klinis.",
     "incorporation_recorded" => "Keputusan penggabungan dicatat saat penyusunan klinis.",

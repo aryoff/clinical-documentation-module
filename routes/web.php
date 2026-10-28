@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use Modules\ClinicalDocumentation\Http\Controllers\ClinicalDocumentationController;
+use Modules\ClinicalDocumentation\Http\Controllers\ClinicalRecordRetentionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,6 +16,15 @@ use Modules\ClinicalDocumentation\Http\Controllers\ClinicalDocumentationControll
 | contains the "web" middleware group. Now create something great!
 |
 */
+
+Route::middleware(["web", "auth"])->prefix("clinical-documentation/retention")->name("clinicaldocumentation.retention.")->group(function () {
+    Route::get("/", [ClinicalRecordRetentionController::class, "index"])->name("index");
+    Route::get("/patients/{patient}", [ClinicalRecordRetentionController::class, "review"])->whereUuid("patient")->name("review");
+    Route::post("/schedules", [ClinicalRecordRetentionController::class, "storeSchedule"])->name("schedules.store");
+    Route::post("/holds", [ClinicalRecordRetentionController::class, "placeHold"])->name("holds.store");
+    Route::post("/holds/{hold}/lift", [ClinicalRecordRetentionController::class, "liftHold"])->whereUuid("hold")->name("holds.lift");
+    Route::post("/extensions", [ClinicalRecordRetentionController::class, "storeExtension"])->name("extensions.store");
+});
 
 Route::middleware(["web", "auth"])->group(function () {
     Route::get("/clinical-documentation/patients/{patient}/record", [

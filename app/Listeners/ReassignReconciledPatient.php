@@ -11,8 +11,10 @@ use Modules\ClinicalDocumentation\Models\ClinicalDocument;
 use Modules\ClinicalDocumentation\Models\ClinicalHandoff;
 use Modules\ClinicalDocumentation\Models\DiagnosisAssertion;
 use Modules\ClinicalDocumentation\Models\DiagnosticResultEvidence;
+use Modules\ClinicalDocumentation\Models\LegalHold;
 use Modules\ClinicalDocumentation\Models\PatientReassignment;
 use Modules\ClinicalDocumentation\Models\PresentedExternalEvidence;
+use Modules\ClinicalDocumentation\Models\RetentionExtension;
 
 /**
  * Inbox for `hospitalcore.patient-identity-reconciled` v1.
@@ -56,6 +58,9 @@ final class ReassignReconciledPatient
         'cd_allergy_assertions' => AllergyAssertion::class,
         'cd_diagnostic_result_evidence' => DiagnosticResultEvidence::class,
         'cd_presented_external_evidence' => PresentedExternalEvidence::class,
+        // Retention protection follows the person: a hold or an extension must never be lost to a merge.
+        'cd_legal_holds' => LegalHold::class,
+        'cd_retention_extensions' => RetentionExtension::class,
     ];
 
     /**

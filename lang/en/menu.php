@@ -6,5 +6,6 @@ return [
         "clinicaldocumentation" => "ClinicalDocumentation",
         "emr_notes_dashboard" => "EMR Notes Dashboard",
         "clinical_access_audit" => "Clinical Access Audit",
+        "clinical_record_retention" => "Clinical Record Retention",
     ],
 ];
