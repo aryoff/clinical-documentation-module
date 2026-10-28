@@ -47,6 +47,19 @@ final class ClinicalRecordRetentionReview
 
         $lastVisit = $visit['last_visit_ended_at'] ?? null;
         array_push($blockers, ...($visit['coverage']['blockers'] ?? []));
+        // The review does not rely on the provider having listed every reason: it re-derives the three that must
+        // never pass, so a terse or older provider cannot turn uncertainty into eligibility.
+        if ($visit !== null) {
+            if (($visit['ongoing'] ?? false) === true) {
+                $blockers[] = 'ongoing_attendance';
+            }
+            if ($lastVisit === null) {
+                $blockers[] = 'no_attendance_evidence';
+            }
+            if (($visit['coverage']['complete'] ?? false) !== true && ($visit['coverage']['blockers'] ?? []) === []) {
+                $blockers[] = 'attendance_evidence_incomplete';
+            }
+        }
 
         $protectedUntil = $lastVisit !== null && $schedule !== null
             ? CarbonImmutable::parse($lastVisit)->addYears($schedule->minimum_years)

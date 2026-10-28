@@ -216,6 +216,40 @@ class ClinicalRecordRetentionTest extends TestCase
         $this->assertContains('last_visit_unavailable', $review['blockers']);
     }
 
+    /** @dataProvider terseProviderAnswers */
+    #[\PHPUnit\Framework\Attributes\DataProvider('terseProviderAnswers')]
+    public function test_a_terse_provider_answer_never_turns_uncertainty_into_eligibility(array $answer, string $blocker): void
+    {
+        $this->schedule(25);
+        $patient = Patient::factory()->create();
+        $this->app->instance(PatientLastVisitPort::class, new class($answer) implements PatientLastVisitPort
+        {
+            public function __construct(private readonly array $answer) {}
+
+            public function lastVisit(string $patientId, string $asOf): ?array
+            {
+                return ['patient_id' => $patientId, 'history_version' => 1] + $this->answer;
+            }
+        });
+
+        $review = $this->review($patient);
+
+        $this->assertFalse($review['eligible_for_review']);
+        $this->assertContains($blocker, $review['blockers']);
+    }
+
+    /** @return array<string, array{array<string, mixed>, string}> */
+    public static function terseProviderAnswers(): array
+    {
+        $old = '2000-01-01T09:00:00+00:00';
+
+        return [
+            'ongoing but no listed blocker' => [['last_visit_ended_at' => $old, 'ongoing' => true, 'coverage' => ['complete' => true, 'through' => $old, 'blockers' => []]], 'ongoing_attendance'],
+            'incomplete but no listed blocker' => [['last_visit_ended_at' => $old, 'ongoing' => false, 'coverage' => ['complete' => false, 'through' => $old, 'blockers' => []]], 'attendance_evidence_incomplete'],
+            'unknown last visit' => [['last_visit_ended_at' => null, 'ongoing' => false, 'coverage' => ['complete' => true, 'through' => $old, 'blockers' => []]], 'no_attendance_evidence'],
+        ];
+    }
+
     // Continuing usefulness
 
     public function test_continuing_usefulness_is_an_explicit_attributable_extension(): void

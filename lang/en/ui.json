@@ -173,6 +173,7 @@
     "record.view_original_administration": "View original administration",
     "retention.back": "Back to retention",
     "retention.blocker.active_legal_hold": "A legal hold is active.",
+    "retention.blocker.attendance_evidence_incomplete": "Attendance evidence is not complete.",
     "retention.blocker.continuing_usefulness_extension": "The records are kept for continuing usefulness.",
     "retention.blocker.last_visit_unavailable": "The last visit cannot be established: no attendance source is installed.",
     "retention.blocker.legacy_history_unverified": "An imported history has no attributable last-visit evidence.",

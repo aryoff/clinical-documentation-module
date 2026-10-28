@@ -173,6 +173,7 @@
     "record.view_original_administration": "Lihat pemberian asli",
     "retention.back": "Kembali ke retensi",
     "retention.blocker.active_legal_hold": "Ada penahanan hukum yang aktif.",
+    "retention.blocker.attendance_evidence_incomplete": "Bukti kunjungan belum lengkap.",
     "retention.blocker.continuing_usefulness_extension": "Rekam disimpan karena masih berguna.",
     "retention.blocker.last_visit_unavailable": "Kunjungan terakhir tidak dapat dipastikan: tidak ada sumber kunjungan yang terpasang.",
     "retention.blocker.legacy_history_unverified": "Riwayat impor belum memiliki bukti kunjungan terakhir yang dapat dipertanggungjawabkan.",

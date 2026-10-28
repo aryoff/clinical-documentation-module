@@ -64,9 +64,11 @@ const Review = ({ review }: ReviewProps) => {
                 ))}
               </ul>
             )}
-            <Link className={"underline"} href={route("clinicaldocumentation.retention.index")}>
-              {t("retention.back")}
-            </Link>
+            {route().has("clinicaldocumentation.retention.index") && (
+              <Link className={"underline"} href={route("clinicaldocumentation.retention.index")}>
+                {t("retention.back")}
+              </Link>
+            )}
           </CardContent>
         </Card>
       </Content>

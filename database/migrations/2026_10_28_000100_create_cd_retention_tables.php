@@ -43,6 +43,7 @@ return new class extends Migration
             $table->uuid('patient_id');
             // patient | record_set
             $table->string('scope', 16);
+            // A JSON collection, so its name is plural on purpose (the singular-column rule is for scalar columns).
             $table->json('record_refs')->nullable();
             $table->text('reason');
             $table->foreignUuid('placed_by')->constrained('users');

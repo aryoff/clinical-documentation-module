@@ -116,7 +116,7 @@ const Index = ({ schedules, holds, floor_years, destruction_enabled }: IndexProp
               <CardDescription>{destruction_enabled ? t("retention.destruction_enabled") : t("retention.destruction_disabled")}</CardDescription>
             </CardHeader>
             <CardContent>
-              <ReviewLookup />
+              {route().has("clinicaldocumentation.retention.review") && <ReviewLookup />}
             </CardContent>
           </Card>
           <Card>
