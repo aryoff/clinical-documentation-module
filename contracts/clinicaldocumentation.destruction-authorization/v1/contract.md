@@ -12,6 +12,18 @@ Destruction afterwards is optional, has no deadline, and is done under the reten
 processing history must be recorded (PP 28/2024 Pasal 977). Backups are the facility's own duty (Permenkes Pasal 20(4)-(5)). Engineering
 analysis, not legal advice.
 
+## Scope correction 2026-10-28
+
+[Decision record #488](https://github.com/aryoff/boilerplate-laravel-react/issues/488) drops two-person proposal/approval, approval binding to a
+reviewed inventory/schedule/history/hold state and approval invalidation. The authorization id identifies the destruction a person started;
+it is not an approval token. Per-step authorization and current protection checks below remain required.
+
+Backup-expiry states and confirmation, the backup-retention setting, an off-database destruction register, post-restore re-application and
+the inpatient-alignment attestation are also dropped. A restore is disaster recovery; resurrected past-retention content is reconsidered
+in the next authorized destruction cycle. Nothing destroys automatically. Processing history records who, why, when, which copies and
+their receipts, never findings. The deployment switch remains off by default. The data owner's request route and its interaction with the
+25-year minimum remain for the facility's legal adviser; this contract does not implement that route.
+
 ## `permits(authorization_id, patient_id, custodian, ref_type, ref_id)`
 
 ```
