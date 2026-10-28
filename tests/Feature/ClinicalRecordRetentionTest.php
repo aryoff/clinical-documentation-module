@@ -33,7 +33,7 @@ class ClinicalRecordRetentionTest extends TestCase
         parent::setUp();
 
         $this->app->make(PermissionRegistrar::class)->forgetCachedPermissions();
-        config(['hospitalcore.attendance.expected_providers' => ['laboratory']]);
+        config(['hospitalcore.attendance.reporting_modules' => [], 'hospitalcore.attendance.expected_providers' => ['laboratory']]);
         $this->officer = User::factory()->create();
         foreach (['view', 'schedule', 'hold', 'extend'] as $ability) {
             $this->officer->givePermissionTo('clinicaldocumentation.retention.'.$ability);

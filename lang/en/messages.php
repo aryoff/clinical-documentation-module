@@ -4,7 +4,7 @@ return [
     "destruction_dependencies_unacknowledged" => "Confirm that no retained clinical record still needs this content before destroying it.",
     "destruction_not_enabled" => "Destruction is not enabled in this deployment.",
     "destruction_not_authorized" => "This destruction is not authorized to continue.",
-    "destruction_not_proposable" => "This patient's records cannot be destroyed yet; open the retention review to see why.",
+    "destruction_not_permitted" => "This patient's records cannot be destroyed yet; open the retention review to see why.",
     "retention_below_floor" => "A retention schedule cannot be shorter than :years years.",
     "retention_cannot_shorten" => "A new schedule version cannot be shorter than the current :years years.",
     "retention_hold_already_lifted" => "That legal hold has already been lifted.",

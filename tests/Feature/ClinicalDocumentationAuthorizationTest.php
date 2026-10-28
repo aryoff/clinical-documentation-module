@@ -76,6 +76,7 @@ class ClinicalDocumentationAuthorizationTest extends TestCase
     {
         $patient = (string) \Illuminate\Support\Str::uuid();
         $request = fn () => $this->post(route('clinicaldocumentation.retention.destroy', $patient), ['reason' => 'x', 'dependencies_acknowledged' => true]);
+        config(['clinicaldocumentation.retention.destruction_enabled' => true]);
 
         $holder = User::factory()->create();
         $holder->givePermissionTo('clinicaldocumentation.retention.destroy');

@@ -41,7 +41,7 @@ class ClinicalRecordDestructionTest extends TestCase
         parent::setUp();
 
         $this->app->make(PermissionRegistrar::class)->forgetCachedPermissions();
-        config(['hospitalcore.attendance.expected_providers' => ['laboratory'], 'clinicaldocumentation.retention.destruction_enabled' => true]);
+        config(['hospitalcore.attendance.reporting_modules' => [], 'hospitalcore.attendance.expected_providers' => ['laboratory'], 'clinicaldocumentation.retention.destruction_enabled' => true]);
         $this->officer = $this->holder(['view', 'destroy']);
         app(ClinicalRecordRetention::class)->recordSchedule(25, 'Policy', (string) $this->officer->id);
         $this->walk = Walk::released('4.2');
@@ -80,7 +80,8 @@ class ClinicalRecordDestructionTest extends TestCase
     {
         config(['clinicaldocumentation.retention.destruction_enabled' => false]);
 
-        $this->destroy()->assertSessionHasErrors('destruction');
+        // The flag gates in the FormRequest, so the action is refused outright rather than answered with a domain error.
+        $this->destroy()->assertForbidden();
 
         $this->assertNotNull(LabResult::findOrFail($this->walk['result']->id)->values);
         $this->assertSame(0, DB::table('cd_destructions')->count());

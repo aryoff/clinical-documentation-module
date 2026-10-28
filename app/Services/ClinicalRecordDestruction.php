@@ -48,7 +48,7 @@ final class ClinicalRecordDestruction
             $blockers = array_values(array_diff($blockers, ['nothing_to_destroy']));
         }
         if ($blockers !== []) {
-            throw $this->refusal('patient_id', 'destruction_not_proposable');
+            throw $this->refusal('patient_id', 'destruction_not_permitted');
         }
         if ($open !== null) {
             $named = $open->items()->get()->map(fn (DestructionItem $i): string => $i->custodian.'|'.$i->ref_type.'|'.$i->ref_id)->all();
