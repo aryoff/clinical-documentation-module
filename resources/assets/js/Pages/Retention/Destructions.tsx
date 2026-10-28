@@ -41,7 +41,7 @@ const Destructions = ({ destructions, destruction_enabled }: DestructionsProps) 
                     <li key={item.id}>{t("destruction.item_line", { custodian: item.custodian, type: item.ref_type, status: t(`destruction.item_status.${item.status}`) })}</li>
                   ))}
                 </ul>
-                {record.status !== "complete" && route().has("clinicaldocumentation.retention.destruction.resume") && (
+                {destruction_enabled && record.status !== "complete" && route().has("clinicaldocumentation.retention.destruction.resume") && (
                   <Button id={joinParts("-", "resume", record.id)} variant={"outline"} onClick={() => router.post(route("clinicaldocumentation.retention.destruction.resume", record.id), {}, { preserveScroll: true })}>
                     {t("destruction.resume")}
                   </Button>
