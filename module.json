@@ -20,12 +20,23 @@
         "clinicaldocumentation.retention.view",
         "clinicaldocumentation.retention.schedule",
         "clinicaldocumentation.retention.hold",
-        "clinicaldocumentation.retention.extend"
+        "clinicaldocumentation.retention.extend",
+        "clinicaldocumentation.retention.destroy"
     ],
     "dictionary": [],
     "require": [],
     "capabilities": {
         "provides": [
+            {
+                "id": "clinicaldocumentation.destruction-authorization",
+                "version": "1.0.0",
+                "modes": ["sync"],
+                "contracts": {
+                    "sync": "contracts/clinicaldocumentation.destruction-authorization/v1/contract.md"
+                },
+                "providerContractTest": "tests/Contract/DestructionAuthorizationContractTest.php",
+                "binding": "Modules\\ClinicalDocumentation\\Contracts\\DestructionAuthorizationContract"
+            },
             {
                 "id": "clinicaldocumentation.active-clinical-record",
                 "version": "1.4.0",
@@ -88,6 +99,13 @@
                 "mode": "sync",
                 "required": true,
                 "consumerContractTest": "tests/Contract/EmergencyAccessReviewConsumerTest.php"
+            },
+            {
+                "id": "laboratory.record-custody",
+                "version": "^1.0",
+                "mode": "sync",
+                "required": false,
+                "consumerContractTest": "tests/Contract/LaboratoryRecordCustodyConsumerTest.php"
             },
             {
                 "id": "hospitalcore.patient-last-visit",

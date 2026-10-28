@@ -1,7 +1,10 @@
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, useForm } from "@inertiajs/react";
 import { type ReactNode } from "react";
 import { Badge } from "@/Components/ui/badge";
+import { Button } from "@/Components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Input } from "@/Components/ui/input";
+import { Label } from "@/Components/ui/label";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout/AuthenticatedLayout";
 import Content from "@/Layouts/AuthenticatedLayout/Components/Content";
 import { useModuleT } from "@/hooks/useModuleT";
@@ -35,6 +38,35 @@ const Blocker = ({ code }: { code: string }) => {
   const { t } = useModuleT();
   const [kind, ...rest] = code.split(":");
   return <li>{t(`retention.blocker.${kind}`, { detail: rest.join(":") })}</li>;
+};
+
+const DestroyForm = ({ patientId }: { patientId: string }) => {
+  const { t } = useModuleT();
+  const form = useForm({ reason: "", dependencies_acknowledged: false });
+  return (
+    <form
+      id={"destroy-form"}
+      className={"space-y-3"}
+      onSubmit={(event) => {
+        event.preventDefault();
+        form.post(route("clinicaldocumentation.retention.destroy", patientId), { preserveScroll: true });
+      }}
+    >
+      <p>{t("destruction.review_hint")}</p>
+      <Label htmlFor={"destroy-reason"}>{t("destruction.reason")}</Label>
+      <Input id={"destroy-reason"} value={form.data.reason} onChange={(e) => form.setData("reason", e.target.value)} />
+      {form.errors.reason && <p className={"text-sm text-destructive"}>{form.errors.reason}</p>}
+      <label className={"flex items-center gap-1 text-sm"}>
+        <input type={"checkbox"} checked={form.data.dependencies_acknowledged} onChange={(e) => form.setData("dependencies_acknowledged", e.target.checked)} />
+        {t("destruction.acknowledge_dependencies")}
+      </label>
+      {form.errors.dependencies_acknowledged && <p className={"text-sm text-destructive"}>{form.errors.dependencies_acknowledged}</p>}
+      {(form.errors as Record<string, string>).destruction && <p className={"text-sm text-destructive"}>{(form.errors as Record<string, string>).destruction}</p>}
+      <Button id={"destroy-findings"} type={"submit"} disabled={form.processing}>
+        {t("destruction.destroy")}
+      </Button>
+    </form>
+  );
 };
 
 const Review = ({ review }: ReviewProps) => {
@@ -74,6 +106,7 @@ const Review = ({ review }: ReviewProps) => {
                 ))}
               </ul>
             )}
+            {review.eligible_for_review && review.destruction_enabled && route().has("clinicaldocumentation.retention.destroy") && <DestroyForm patientId={review.patient_id} />}
             {route().has("clinicaldocumentation.retention.index") && (
               <Link className={"underline"} href={route("clinicaldocumentation.retention.index")}>
                 {t("retention.back")}

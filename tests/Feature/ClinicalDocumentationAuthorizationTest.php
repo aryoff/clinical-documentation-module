@@ -70,6 +70,26 @@ class ClinicalDocumentationAuthorizationTest extends TestCase
         }
     }
 
+    // clinicaldocumentation.retention.destroy
+
+    public function test_the_destroy_ability_opens_destruction_and_nothing_else_does(): void
+    {
+        $patient = (string) \Illuminate\Support\Str::uuid();
+        $request = fn () => $this->post(route('clinicaldocumentation.retention.destroy', $patient), ['reason' => 'x', 'dependencies_acknowledged' => true]);
+
+        $holder = User::factory()->create();
+        $holder->givePermissionTo('clinicaldocumentation.retention.destroy');
+        $this->actingAs($holder);
+        $this->assertNotSame(403, $request()->getStatusCode());
+
+        $others = User::factory()->create();
+        foreach (['view', 'schedule', 'hold', 'extend'] as $other) {
+            $others->givePermissionTo('clinicaldocumentation.retention.'.$other);
+        }
+        $this->actingAs($others);
+        $this->assertSame(403, $request()->getStatusCode());
+    }
+
     // clinicaldocumentation.records.read
 
     public function test_the_document_list_is_forbidden_without_the_read_permission(): void

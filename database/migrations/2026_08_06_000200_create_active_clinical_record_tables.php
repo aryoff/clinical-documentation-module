@@ -115,6 +115,8 @@ return new class extends Migration
             $table->string('code');
             $table->string('display');
             $table->text('summary')->nullable();
+            // Stamped when an authorized retention destruction removed the summary; the record itself stays.
+            $table->timestamp('destroyed_at')->nullable();
             $table->timestamp('observed_at');
             $table->uuid('released_by')->index();
             $table->string('released_by_name');

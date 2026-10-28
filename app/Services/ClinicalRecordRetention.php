@@ -12,6 +12,7 @@ use Modules\ClinicalDocumentation\Models\LegalHold;
 use Modules\ClinicalDocumentation\Models\LegalHoldEvent;
 use Modules\ClinicalDocumentation\Models\RetentionExtension;
 use Modules\ClinicalDocumentation\Models\RetentionSchedule;
+use Modules\ClinicalDocumentation\Support\ProtectionLock;
 
 /**
  * Clinical Record Retention policy and the Legal Hold register: versioned schedules, continuing-usefulness extensions
@@ -52,19 +53,24 @@ final class ClinicalRecordRetention
 
     public function recordExtension(string $patientId, string $retainUntil, string $reason, string $actorId): RetentionExtension
     {
-        return RetentionExtension::create([
-            'patient_id' => $patientId,
-            'retain_until' => $retainUntil,
-            'reason' => $reason,
-            'decided_by' => $actorId,
-            'decided_by_name' => $this->name($actorId),
-        ]);
+        return DB::transaction(function () use ($patientId, $retainUntil, $reason, $actorId): RetentionExtension {
+            ProtectionLock::forPatient($patientId);
+
+            return RetentionExtension::create([
+                'patient_id' => $patientId,
+                'retain_until' => $retainUntil,
+                'reason' => $reason,
+                'decided_by' => $actorId,
+                'decided_by_name' => $this->name($actorId),
+            ]);
+        });
     }
 
     /** @param list<array{type: string, id: string}>|null $recordRefs */
     public function placeHold(string $patientId, string $scope, ?array $recordRefs, string $reason, string $actorId): LegalHold
     {
         return DB::transaction(function () use ($patientId, $scope, $recordRefs, $reason, $actorId): LegalHold {
+            ProtectionLock::forPatient($patientId);
             $hold = LegalHold::create([
                 'patient_id' => $patientId,
                 'scope' => $scope,
@@ -84,6 +90,7 @@ final class ClinicalRecordRetention
     {
         return DB::transaction(function () use ($holdId, $reason, $actorId): LegalHold {
             $hold = LegalHold::query()->lockForUpdate()->findOrFail($holdId);
+            ProtectionLock::forPatient($hold->patient_id);
             if ($hold->lifted_at !== null) {
                 throw ValidationException::withMessages(['hold' => __('clinicaldocumentation::messages.retention_hold_already_lifted')]);
             }

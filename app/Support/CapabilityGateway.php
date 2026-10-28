@@ -61,6 +61,12 @@ final class CapabilityGateway
         return $this->callIfAvailable($capabilityId, $method, $arguments);
     }
 
+    /** Whether a provider for this capability is composed and can be reached. */
+    public function provides(string $capabilityId): bool
+    {
+        return $this->provider($capabilityId) !== null;
+    }
+
     private function provider(string $capabilityId): ?object
     {
         foreach ($this->registry->providerBindings($capabilityId) as $binding) {

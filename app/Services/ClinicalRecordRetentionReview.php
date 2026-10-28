@@ -101,8 +101,8 @@ final class ClinicalRecordRetentionReview
             ])->all(),
             'blockers' => $blockers,
             'eligible_for_review' => $blockers === [],
-            // Execution is a later stage; this report has no way to turn it on.
-            'destruction_enabled' => false,
+            // Whether execution is available at all, from the deployment's conditions; the review itself destroys nothing.
+            'destruction_enabled' => app(DestructionEnablement::class)->enabled(),
         ];
     }
 }

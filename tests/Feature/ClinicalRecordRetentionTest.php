@@ -102,14 +102,18 @@ class ClinicalRecordRetentionTest extends TestCase
         $this->assertFalse($review['destruction_enabled']);
     }
 
-    public function test_expiry_permits_review_only_and_is_never_a_destruction_enablement(): void
+    public function test_expiry_permits_review_only_and_the_review_itself_destroys_nothing(): void
     {
         $this->schedule(25);
         $patient = $this->patientWhoLastVisited('2000-01-01 09:00:00');
 
         $this->assertFalse($this->review($patient)['destruction_enabled']);
         config(['clinicaldocumentation.retention.destruction_enabled' => true]);
-        $this->assertFalse($this->review($patient)['destruction_enabled']);
+        $review = $this->review($patient);
+
+        $this->assertTrue($review['destruction_enabled']);
+        $this->assertTrue($review['eligible_for_review']);
+        $this->assertSame(0, DB::table('cd_destructions')->count());
     }
 
     public function test_a_later_visit_moves_the_protection_of_the_old_records(): void

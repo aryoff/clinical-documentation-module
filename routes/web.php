@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use Modules\ClinicalDocumentation\Http\Controllers\ClinicalDocumentationController;
+use Modules\ClinicalDocumentation\Http\Controllers\ClinicalRecordDestructionController;
 use Modules\ClinicalDocumentation\Http\Controllers\ClinicalRecordRetentionController;
 
 /*
@@ -24,6 +25,10 @@ Route::middleware(["web", "auth"])->prefix("clinical-documentation/retention")->
     Route::post("/holds", [ClinicalRecordRetentionController::class, "placeHold"])->name("holds.store");
     Route::post("/holds/{hold}/lift", [ClinicalRecordRetentionController::class, "liftHold"])->whereUuid("hold")->name("holds.lift");
     Route::post("/extensions", [ClinicalRecordRetentionController::class, "storeExtension"])->name("extensions.store");
+
+    Route::get("/destruction", [ClinicalRecordDestructionController::class, "index"])->name("destruction.index");
+    Route::post("/patients/{patient}/destroy", [ClinicalRecordDestructionController::class, "destroy"])->whereUuid("patient")->name("destroy");
+    Route::post("/destruction/{destruction}/resume", [ClinicalRecordDestructionController::class, "resume"])->whereUuid("destruction")->name("destruction.resume");
 });
 
 Route::middleware(["web", "auth"])->group(function () {

@@ -76,6 +76,11 @@ class ClinicalDocumentationServiceProvider extends ServiceProvider
     {
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
+        // Scoped: it reaches custodians by capability ID and answers from whichever composition is running.
+        $this->app->scoped(
+            \Modules\ClinicalDocumentation\Contracts\DestructionAuthorizationContract::class,
+            \Modules\ClinicalDocumentation\Services\DestructionAuthorization::class,
+        );
         // Scoped: it answers from whichever composition is running, and a long-lived worker must not keep a stale one.
         $this->app->scoped(
             PatientLastVisitPort::class,

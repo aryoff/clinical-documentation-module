@@ -1,6 +1,10 @@
 <?php
 
 return [
+    "destruction_dependencies_unacknowledged" => "Pastikan tidak ada rekam klinis yang masih memerlukan isi ini sebelum menyetujui.",
+    "destruction_not_enabled" => "Pemusnahan tidak diaktifkan pada penerapan ini.",
+    "destruction_not_authorized" => "Pemusnahan ini tidak diizinkan untuk dilanjutkan.",
+    "destruction_not_proposable" => "Rekam pasien ini belum dapat diusulkan untuk dimusnahkan; buka tinjauan retensi untuk mengetahui alasannya.",
     "retention_below_floor" => "Jadwal retensi tidak boleh kurang dari :years tahun.",
     "retention_cannot_shorten" => "Versi jadwal baru tidak boleh lebih pendek dari :years tahun yang berlaku.",
     "retention_hold_already_lifted" => "Penahanan hukum itu sudah dicabut.",

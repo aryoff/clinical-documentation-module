@@ -44,7 +44,7 @@ Three of this module's permissions are classified **clinical** in HospitalCore's
 ## Clinical Record Retention (reporting stage)
 
 Root ADR 0033 / #473. This module owns the retention policy, the legal-hold register and the review; HospitalCore owns Patient
-Last Visit, and custodians (Laboratory and others) will execute destruction in a later stage.
+Last Visit, and custodians (Laboratory and others) execute destruction steps when asked.
 
 - **Schedules** (`cd_retention_schedules`): versioned, 25-year floor, a version may lengthen protection and never shorten it. Insert-only.
   Every review cites the schedule version it applied.
@@ -54,9 +54,21 @@ Last Visit, and custodians (Laboratory and others) will execute destruction in a
 - **Extensions** (`cd_retention_extensions`): continuing usefulness, an explicit attributable decision with a reason and a future date.
 - **Review** (`ClinicalRecordRetentionReview`): eligible only when no blocker exists. Missing evidence (no schedule, no last-visit
   provider, incomplete attendance coverage, unknown last visit) is a blocker, never a pass. Reaching a retention date permits review only.
-- **Destruction is not built.** `destruction_enabled` is hard-coded false and no code here removes anything; the destruction ticket
-  (clinical-documentation-module#8) owns the two-person authorization and the gate.
-- **Abilities** `clinicaldocumentation.retention.{view,schedule,hold,extend}` are checked in plain FormRequests. They are not clinical
+- **Destruction** (`ClinicalRecordDestruction`, clinical-documentation-module#8, decision record root #488): the mandatory duty is to keep records
+  at least 25 years from the last visit (Permenkes 24/2022 Pasal 39(1); PP 28/2024 Pasal 974(3)); destruction afterwards is optional. It is **one
+  authorized action** (`retention.destroy`) that acknowledges no retained clinical record still needs the content, covers every copy across
+  custodians (Laboratory by capability ID, plus this module's own Diagnostic Result Evidence found by `result_reference_id`) and runs them one by one.
+  Every custodian asks `clinicaldocumentation.destruction-authorization` before each irreversible step; `problem()` re-checks the review, the
+  dependencies and discovered copies under a per-patient lock that hold and extension writes also take. A hold, a later visit or a discovered copy
+  stops the rest; what was destroyed stays destroyed and the rest can be resumed.
+- **Processing history** (PP 28/2024 Pasal 977): `cd_destructions` (who, why, when) and `cd_destruction_items` (each copy and its receipt), never the
+  findings. A step stops at the first failure, leaves a truthful `partial`, and retries safely because custodians answer a repeat with the receipt
+  they already issued. `clinicaldocumentation:resume-destruction` finishes a started destruction and can never start one.
+- **Off by default**: `clinicaldocumentation.retention.destruction_enabled`. There is no approval step, backup state or restore tooling: backups are the
+  facility's own duty (Permenkes Pasal 20(4)-(5)) and a restore is disaster recovery, where resurrected past-retention data is simply destroyed again.
+- Evidence still cited by a retained assertion is protected (no cascade), and a patient with an archived copy (`cd_archive_packages`) is blocked
+  until the vault's custody can be proven (#56).
+- **Abilities** `clinicaldocumentation.retention.{view,schedule,hold,extend,destroy}` are checked in plain FormRequests. They are not clinical
   authorities, and the ordinary record abilities confer none of them.
 - **Last visit by capability ID**: `PatientLastVisitPort` forwards to `hospitalcore.patient-last-visit` (optional); absence reads as
   `last_visit_unavailable`.
