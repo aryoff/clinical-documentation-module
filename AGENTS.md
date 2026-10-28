@@ -62,6 +62,9 @@ Last Visit, and custodians (Laboratory and others) execute destruction steps whe
   dependencies and discovered copies under a per-patient lock that hold and extension writes also take. A hold, a later visit or a discovered copy
   stops the rest; what was destroyed stays destroyed and the rest can be resumed (by the worker, or by doing the action again, which finishes the open
   destruction instead of starting another). This module's own copy is guarded by that same `problem()` check inside the lock; it does not ask itself.
+- **What a destroyed result copy keeps**: for Diagnostic Result Evidence only `summary` (the findings) is cleared and `destroyed_at` stamped. `code`, `display`
+  and `coding_system` are the identity of the test that was done (Laboratory publishes `display` as the test's name), the same identity Laboratory's own
+  tombstone keeps. A source whose `display` can itself state a finding must clear it too before it is added as a custodian here.
 - **Processing history** (PP 28/2024 Pasal 977): `cd_destructions` (who, why, when) and `cd_destruction_items` (each copy and its receipt), never the
   findings. A step stops at the first failure, leaves a truthful `partial`, and retries safely because custodians answer a repeat with the receipt
   they already issued. `clinicaldocumentation:resume-destruction` finishes a started destruction and can never start one.
