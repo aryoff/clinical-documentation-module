@@ -7,6 +7,7 @@ namespace Modules\ClinicalDocumentation\Services;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Modules\ClinicalDocumentation\Models\ClinicalArchivePackage;
 use Modules\ClinicalDocumentation\Models\Destruction;
@@ -39,14 +40,25 @@ final class ClinicalRecordDestruction
         if (! $dependenciesAcknowledged) {
             throw $this->refusal('dependencies_acknowledged', 'destruction_dependencies_unacknowledged');
         }
-        // A destruction already started for this patient and not finished: doing it again finishes that one.
+        ['items' => $items, 'blockers' => $blockers] = $this->assess($patientId);
+        // A destruction already started for this patient and not finished: doing it again finishes that one, and takes
+        // in any live copy the person has not yet seen, so a stopped destruction is never stuck behind a discovered copy.
         $open = Destruction::query()->where('patient_id', $patientId)->whereNull('completed_at')->orderBy('started_at')->first();
         if ($open !== null) {
-            return $this->run($open);
+            $blockers = array_values(array_diff($blockers, ['nothing_to_destroy']));
         }
-        ['items' => $items, 'blockers' => $blockers] = $this->assess($patientId);
         if ($blockers !== []) {
             throw $this->refusal('patient_id', 'destruction_not_proposable');
+        }
+        if ($open !== null) {
+            $named = $open->items()->get()->map(fn (DestructionItem $i): string => $i->custodian.'|'.$i->ref_type.'|'.$i->ref_id)->all();
+            foreach ($items as $item) {
+                if (! in_array($item['custodian'].'|'.$item['ref_type'].'|'.$item['ref_id'], $named, true)) {
+                    DestructionItem::create(['destruction_id' => $open->id] + array_intersect_key($item, array_flip(['custodian', 'ref_type', 'ref_id'])));
+                }
+            }
+
+            return $this->run($open);
         }
 
         $destruction = DB::transaction(function () use ($patientId, $reason, $actorId, $items): Destruction {
@@ -75,7 +87,7 @@ final class ClinicalRecordDestruction
             throw $this->refusal('destruction', 'destruction_not_enabled');
         }
 
-        $destruction = \Illuminate\Support\Str::isUuid($destructionId) ? Destruction::query()->find($destructionId) : null;
+        $destruction = Str::isUuid($destructionId) ? Destruction::query()->find($destructionId) : null;
         if ($destruction === null) {
             throw $this->refusal('destruction', 'destruction_not_authorized');
         }
@@ -197,7 +209,7 @@ final class ClinicalRecordDestruction
             $blockers[] = 'vault_custody_unproven';
         }
         // Copies of Laboratory's findings exist here but the owner cannot be asked what else it holds: not "nothing".
-        if (! $this->custody->laboratoryAvailable() && DiagnosticResultEvidence::query()->where('patient_id', $patientId)->where('source_owner', 'laboratory')->exists()) {
+        if (! $this->custody->laboratoryAvailable() && DiagnosticResultEvidence::query()->where('patient_id', $patientId)->where('source_owner', 'laboratory')->whereNull('destroyed_at')->exists()) {
             $blockers[] = 'custody_unavailable';
         }
 

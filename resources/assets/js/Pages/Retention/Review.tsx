@@ -44,7 +44,7 @@ const Blocker = ({ code }: { code: string }) => {
 const DestroyForm = ({ patientId }: { patientId: string }) => {
   const { t } = useModuleT();
   const form = useForm({ reason: "", dependencies_acknowledged: false });
-  // The server also answers with a `destruction` error that is not one of the fields.
+  // One bag for every error, since the server also answers with a `destruction` error that is not one of the fields.
   const errors: Record<string, string | undefined> = form.errors;
   return (
     <form
@@ -58,12 +58,12 @@ const DestroyForm = ({ patientId }: { patientId: string }) => {
       <p>{t("destruction.review_hint")}</p>
       <Label htmlFor={"destroy-reason"}>{t("destruction.reason")}</Label>
       <Input id={"destroy-reason"} value={form.data.reason} onChange={(e) => form.setData("reason", e.target.value)} />
-      {form.errors.reason && <p className={"text-sm text-destructive"}>{form.errors.reason}</p>}
+      {errors.reason && <p className={"text-sm text-destructive"}>{errors.reason}</p>}
       <label className={"flex items-center gap-1 text-sm"}>
         <Checkbox checked={form.data.dependencies_acknowledged} onCheckedChange={(checked) => form.setData("dependencies_acknowledged", checked === true)} />
         {t("destruction.acknowledge_dependencies")}
       </label>
-      {form.errors.dependencies_acknowledged && <p className={"text-sm text-destructive"}>{form.errors.dependencies_acknowledged}</p>}
+      {errors.dependencies_acknowledged && <p className={"text-sm text-destructive"}>{errors.dependencies_acknowledged}</p>}
       {errors.destruction && <p className={"text-sm text-destructive"}>{errors.destruction}</p>}
       <Button id={"destroy-findings"} type={"submit"} disabled={form.processing}>
         {t("destruction.destroy")}

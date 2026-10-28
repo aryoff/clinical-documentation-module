@@ -161,6 +161,21 @@ class ClinicalRecordDestructionTest extends TestCase
         $this->assertGreaterThan(0, DB::table('cd_destruction_items')->where('status', '!=', 'destroyed')->count());
     }
 
+    public function test_doing_the_action_again_takes_in_a_copy_that_stopped_the_first_run(): void
+    {
+        $this->flakyCustodian(afterCall: 1, then: fn () => app(ResultService::class)->amend($this->walk['line']->id, [['code' => 'K', 'value' => '3.0']], 'Late fix', (string) $this->walk['lab']['admin']->id));
+        $this->destroy()->assertSessionHasErrors('destruction');
+        $amended = LabResult::where('version', 2)->firstOrFail();
+        $this->assertNotNull($amended->values);
+
+        $this->destroy()->assertRedirect();
+
+        $this->assertNull(LabResult::findOrFail($amended->id)->values);
+        $this->assertNull(LabResult::findOrFail($this->walk['result']->id)->values);
+        $this->assertSame(1, DB::table('cd_destructions')->count());
+        $this->assertSame('complete', $this->recordStatus());
+    }
+
     // Partial execution and retry
 
     public function test_a_custodian_failure_leaves_a_truthful_partial_and_a_retry_finishes_without_repeating_effects(): void

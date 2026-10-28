@@ -6,8 +6,8 @@ namespace Modules\ClinicalDocumentation\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use Modules\ClinicalDocumentation\Support\RetentionDestruction;
 use Modules\ClinicalDocumentation\Models\Concerns\RefilesUnderCanonicalPatient;
+use Modules\ClinicalDocumentation\Support\RetentionDestruction;
 
 class DiagnosticResultEvidence extends Model
 {

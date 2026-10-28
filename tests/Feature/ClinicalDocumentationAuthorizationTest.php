@@ -80,7 +80,8 @@ class ClinicalDocumentationAuthorizationTest extends TestCase
         $holder = User::factory()->create();
         $holder->givePermissionTo('clinicaldocumentation.retention.destroy');
         $this->actingAs($holder);
-        $this->assertNotSame(403, $request()->getStatusCode());
+        // Authorized: past the gate, the unknown patient is answered with a redirect carrying the domain refusal.
+        $this->assertSame(302, $request()->getStatusCode());
 
         $others = User::factory()->create();
         foreach (['view', 'schedule', 'hold', 'extend'] as $other) {

@@ -27,7 +27,7 @@ final class ClinicalRecordDestructionController extends Controller
             'started_at' => $record->started_at->toIso8601String(),
             'status' => $destruction->status($record),
             'items' => $record->items->map(fn ($item): array => [
-                'custodian' => $item->custodian, 'ref_type' => $item->ref_type, 'status' => $item->status, 'failure' => $item->failure,
+                'id' => $item->id, 'custodian' => $item->custodian, 'ref_type' => $item->ref_type, 'status' => $item->status, 'failure' => $item->failure,
             ])->all(),
         ])->all();
 

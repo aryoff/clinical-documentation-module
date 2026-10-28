@@ -8,7 +8,7 @@ import Content from "@/Layouts/AuthenticatedLayout/Components/Content";
 import { useModuleT } from "@/hooks/useModuleT";
 import { joinParts } from "../../Support/ids";
 
-type Item = { custodian: string; ref_type: string; status: string; failure: string | null };
+type Item = { id: string; custodian: string; ref_type: string; status: string; failure: string | null };
 type DestructionRecord = { id: string; patient_id: string; reason: string; destroyed_by_name: string | null; started_at: string; status: string; items: Item[] };
 type DestructionsProps = { destructions: DestructionRecord[]; destruction_enabled: boolean };
 
@@ -38,7 +38,7 @@ const Destructions = ({ destructions, destruction_enabled }: DestructionsProps) 
               <CardContent className={"space-y-2"}>
                 <ul className={"list-disc pl-6"}>
                   {record.items.map((item) => (
-                    <li key={joinParts("-", item.custodian, item.ref_type, item.status)}>{t("destruction.item_line", { custodian: item.custodian, type: item.ref_type, status: t(joinParts("", "destruction.item_status.", item.status)) })}</li>
+                    <li key={item.id}>{t("destruction.item_line", { custodian: item.custodian, type: item.ref_type, status: t(joinParts("", "destruction.item_status.", item.status)) })}</li>
                   ))}
                 </ul>
                 {record.status !== "complete" && route().has("clinicaldocumentation.retention.destruction.resume") && (
