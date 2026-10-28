@@ -89,7 +89,7 @@ const Review = ({ review }: ReviewProps) => {
             <Line id={"review-patient"} label={t("retention.patient_id")} value={review.patient_id} />
             <Line id={"review-schedule"} label={t("retention.schedule")} value={review.schedule_version ? t("retention.schedule_value", { version: review.schedule_version, years: review.minimum_years ?? 0 }) : missing} />
             <Line id={"review-last-visit"} label={t("retention.last_visit")} value={when(review.last_visit_ended_at)} />
-            <Line id={"review-coverage"} label={t("retention.coverage")} value={t(review.coverage_complete ? "retention.coverage_complete" : "retention.coverage_incomplete", { through: when(review.coverage_through) })} />
+            <Line id={"review-coverage"} label={t("retention.coverage")} value={review.coverage_complete ? t("retention.coverage_complete", { through: when(review.coverage_through) }) : t("retention.coverage_incomplete", { through: when(review.coverage_through) })} />
             <Line id={"review-protected-until"} label={t("retention.protected_until")} value={when(review.protected_until)} />
             <Line id={"review-extension"} label={t("retention.extension_until")} value={review.extension_until ?? missing} />
             <p id={"review-outcome"}>
