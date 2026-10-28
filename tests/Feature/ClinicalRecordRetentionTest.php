@@ -97,6 +97,8 @@ class ClinicalRecordRetentionTest extends TestCase
         $this->assertTrue($review['eligible_for_review']);
         $this->assertSame([], $review['blockers']);
         $this->assertSame(1, $review['schedule_version']);
+        $this->assertTrue($review['coverage_complete']);
+        $this->assertNotNull($review['coverage_through']);
         $this->assertFalse($review['destruction_enabled']);
     }
 

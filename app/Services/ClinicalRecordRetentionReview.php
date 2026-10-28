@@ -86,6 +86,9 @@ final class ClinicalRecordRetentionReview
             'minimum_years' => $schedule?->minimum_years,
             'last_visit_ended_at' => $lastVisit,
             'history_version' => $visit['history_version'] ?? null,
+            // The coverage the last visit was judged against, so a date is never shown without the cutoff behind it.
+            'coverage_through' => $visit['coverage']['through'] ?? $cutoff->toIso8601String(),
+            'coverage_complete' => ($visit['coverage']['complete'] ?? false) === true,
             'protected_until' => $protectedUntil?->toIso8601String(),
             'extension_until' => $extensionUntil === null ? null : CarbonImmutable::parse($extensionUntil)->toDateString(),
             'holds' => $holds->map(fn (LegalHold $hold): array => [
