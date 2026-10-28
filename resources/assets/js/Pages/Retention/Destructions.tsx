@@ -9,8 +9,8 @@ import { useModuleT } from "@/hooks/useModuleT";
 import { joinParts } from "../../Support/ids";
 
 type Item = { custodian: string; ref_type: string; status: string; failure: string | null };
-type Record = { id: string; patient_id: string; reason: string; destroyed_by_name: string | null; started_at: string; status: string; items: Item[] };
-type DestructionsProps = { destructions: Record[]; destruction_enabled: boolean };
+type DestructionRecord = { id: string; patient_id: string; reason: string; destroyed_by_name: string | null; started_at: string; status: string; items: Item[] };
+type DestructionsProps = { destructions: DestructionRecord[]; destruction_enabled: boolean };
 
 const Destructions = ({ destructions, destruction_enabled }: DestructionsProps) => {
   const { t } = useModuleT();

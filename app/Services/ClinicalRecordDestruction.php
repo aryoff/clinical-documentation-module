@@ -39,6 +39,11 @@ final class ClinicalRecordDestruction
         if (! $dependenciesAcknowledged) {
             throw $this->refusal('dependencies_acknowledged', 'destruction_dependencies_unacknowledged');
         }
+        // A destruction already started for this patient and not finished: doing it again finishes that one.
+        $open = Destruction::query()->where('patient_id', $patientId)->whereNull('completed_at')->orderBy('started_at')->first();
+        if ($open !== null) {
+            return $this->run($open);
+        }
         ['items' => $items, 'blockers' => $blockers] = $this->assess($patientId);
         if ($blockers !== []) {
             throw $this->refusal('patient_id', 'destruction_not_proposable');
@@ -215,7 +220,8 @@ final class ClinicalRecordDestruction
     {
         $named = $destruction->items()->get()->map(fn (DestructionItem $i): string => $i->custodian.'|'.$i->ref_type.'|'.$i->ref_id)->all();
         foreach ($this->custody->inventory($destruction->patient_id) as $held) {
-            if (! in_array($held['custodian'].'|'.$held['ref_type'].'|'.$held['ref_id'], $named, true)) {
+            // A copy already destroyed (by this or an earlier destruction) is not new; only a live one the person did not see is.
+            if ($held['state'] === 'live' && ! in_array($held['custodian'].'|'.$held['ref_type'].'|'.$held['ref_id'], $named, true)) {
                 return true;
             }
         }

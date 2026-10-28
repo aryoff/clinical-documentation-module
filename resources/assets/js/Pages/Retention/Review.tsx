@@ -2,6 +2,7 @@ import { Head, Link, useForm } from "@inertiajs/react";
 import { type ReactNode } from "react";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
+import { Checkbox } from "@/Components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
@@ -43,6 +44,8 @@ const Blocker = ({ code }: { code: string }) => {
 const DestroyForm = ({ patientId }: { patientId: string }) => {
   const { t } = useModuleT();
   const form = useForm({ reason: "", dependencies_acknowledged: false });
+  // The server also answers with a `destruction` error that is not one of the fields.
+  const errors: Record<string, string | undefined> = form.errors;
   return (
     <form
       id={"destroy-form"}
@@ -57,11 +60,11 @@ const DestroyForm = ({ patientId }: { patientId: string }) => {
       <Input id={"destroy-reason"} value={form.data.reason} onChange={(e) => form.setData("reason", e.target.value)} />
       {form.errors.reason && <p className={"text-sm text-destructive"}>{form.errors.reason}</p>}
       <label className={"flex items-center gap-1 text-sm"}>
-        <input type={"checkbox"} checked={form.data.dependencies_acknowledged} onChange={(e) => form.setData("dependencies_acknowledged", e.target.checked)} />
+        <Checkbox checked={form.data.dependencies_acknowledged} onCheckedChange={(checked) => form.setData("dependencies_acknowledged", checked === true)} />
         {t("destruction.acknowledge_dependencies")}
       </label>
       {form.errors.dependencies_acknowledged && <p className={"text-sm text-destructive"}>{form.errors.dependencies_acknowledged}</p>}
-      {(form.errors as Record<string, string>).destruction && <p className={"text-sm text-destructive"}>{(form.errors as Record<string, string>).destruction}</p>}
+      {errors.destruction && <p className={"text-sm text-destructive"}>{errors.destruction}</p>}
       <Button id={"destroy-findings"} type={"submit"} disabled={form.processing}>
         {t("destruction.destroy")}
       </Button>

@@ -17,16 +17,17 @@ use Modules\ClinicalDocumentation\Models\LegalHold;
 use Modules\ClinicalDocumentation\Models\RetentionSchedule;
 use Modules\ClinicalDocumentation\Services\ClinicalRecordRetention;
 use Modules\ClinicalDocumentation\Services\ClinicalRecordRetentionReview;
+use Modules\ClinicalDocumentation\Services\DestructionEnablement;
 
 final class ClinicalRecordRetentionController extends Controller
 {
-    public function index(ViewClinicalRecordRetentionRequest $request): Response
+    public function index(ViewClinicalRecordRetentionRequest $request, DestructionEnablement $enablement): Response
     {
         return Inertia::render('ClinicalDocumentation::Retention/Index', [
             'schedules' => RetentionSchedule::query()->orderByDesc('version')->get(['id', 'version', 'minimum_years', 'rationale', 'created_by_name', 'created_at']),
             'holds' => LegalHold::query()->whereNull('lifted_at')->orderBy('placed_at')->get(['id', 'patient_id', 'scope', 'record_refs', 'reason', 'placed_by_name', 'placed_at']),
             'floor_years' => ClinicalRecordRetention::FLOOR_YEARS,
-            'destruction_enabled' => app(\Modules\ClinicalDocumentation\Services\DestructionEnablement::class)->enabled(),
+            'destruction_enabled' => $enablement->enabled(),
         ]);
     }
 

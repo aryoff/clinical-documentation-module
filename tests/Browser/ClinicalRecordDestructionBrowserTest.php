@@ -41,7 +41,7 @@ test('a records officer destroys the findings of a patient past retention and re
         ->assertSee('May be considered for destruction review')
         ->assertSee('Destroying removes the findings')
         ->fill('#destroy-reason', 'Retention period ended')
-        ->check('input[type=checkbox]')
+        ->click('button[role=checkbox]')
         ->press('#destroy-findings')
         ->navigate('/clinical-documentation/retention/destruction')
         ->assertSee('Complete')

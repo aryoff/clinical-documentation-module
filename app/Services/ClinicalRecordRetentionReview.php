@@ -20,6 +20,7 @@ final class ClinicalRecordRetentionReview
     public function __construct(
         private readonly ClinicalRecordRetention $retention,
         private readonly PatientLastVisitPort $visits,
+        private readonly DestructionEnablement $enablement,
     ) {}
 
     /** @return array<string, mixed> */
@@ -102,7 +103,7 @@ final class ClinicalRecordRetentionReview
             'blockers' => $blockers,
             'eligible_for_review' => $blockers === [],
             // Whether execution is available at all, from the deployment's conditions; the review itself destroys nothing.
-            'destruction_enabled' => app(DestructionEnablement::class)->enabled(),
+            'destruction_enabled' => $this->enablement->enabled(),
         ];
     }
 }

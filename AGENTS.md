@@ -60,7 +60,8 @@ Last Visit, and custodians (Laboratory and others) execute destruction steps whe
   custodians (Laboratory by capability ID, plus this module's own Diagnostic Result Evidence found by `result_reference_id`) and runs them one by one.
   Every custodian asks `clinicaldocumentation.destruction-authorization` before each irreversible step; `problem()` re-checks the review, the
   dependencies and discovered copies under a per-patient lock that hold and extension writes also take. A hold, a later visit or a discovered copy
-  stops the rest; what was destroyed stays destroyed and the rest can be resumed.
+  stops the rest; what was destroyed stays destroyed and the rest can be resumed (by the worker, or by doing the action again, which finishes the open
+  destruction instead of starting another). This module's own copy is guarded by that same `problem()` check inside the lock; it does not ask itself.
 - **Processing history** (PP 28/2024 Pasal 977): `cd_destructions` (who, why, when) and `cd_destruction_items` (each copy and its receipt), never the
   findings. A step stops at the first failure, leaves a truthful `partial`, and retries safely because custodians answer a repeat with the receipt
   they already issued. `clinicaldocumentation:resume-destruction` finishes a started destruction and can never start one.

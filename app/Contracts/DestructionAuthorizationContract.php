@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Modules\ClinicalDocumentation\Contracts;
 
 /**
- * Whether ONE destruction step is authorized right now. Asked by every custodian at the start of each irreversible step.
+ * Whether ONE destruction step is allowed right now. Asked by every custodian at the start of each irreversible step.
  *
- * An approval is bound to the exact set of records, the schedule version, the visit-history version and the hold state its
- * approver reviewed. A step outside that set, or after any of those changed, is not permitted, and the standing of the
- * remaining steps ends. Absence of an answer is never permission.
+ * A step is permitted only for a destruction a person started, covering exactly that copy, while destruction is switched on and
+ * nothing that allowed it has changed: the retention review still has no blocker, no retained assertion cites the content, no
+ * unproven vaulted copy exists and no copy appeared that the person did not see. Absence of an answer is never permission.
  */
 interface DestructionAuthorizationContract
 {

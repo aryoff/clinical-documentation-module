@@ -191,6 +191,31 @@ class ClinicalRecordDestructionTest extends TestCase
         $this->assertSame($laboratoryItems, DB::table('lab_destruction_receipts')->count());
     }
 
+    public function test_doing_the_action_again_finishes_the_open_destruction_instead_of_starting_another(): void
+    {
+        $this->flakyCustodian(failOnCall: 2);
+        $this->destroy();
+        $this->assertSame('partial', $this->recordStatus());
+
+        $this->destroy()->assertRedirect();
+
+        $this->assertSame(1, DB::table('cd_destructions')->count());
+        $this->assertSame('complete', $this->recordStatus());
+        $this->assertSame(1, DB::table('lab_destruction_receipts')->where('ref_type', 'result_version')->count());
+    }
+
+    public function test_copies_already_destroyed_by_an_earlier_destruction_are_not_treated_as_discovered(): void
+    {
+        $this->destroy();
+        $service = app(\Modules\ClinicalDocumentation\Services\ClinicalRecordDestruction::class);
+        $later = \Modules\ClinicalDocumentation\Models\Destruction::create([
+            'patient_id' => $this->patientId, 'reason' => 'Later', 'dependencies_acknowledged' => true,
+            'destroyed_by' => $this->officer->id, 'destroyed_by_name' => 'x', 'started_at' => now(),
+        ]);
+
+        $this->assertNull($service->problem($later));
+    }
+
     public function test_a_worker_can_only_finish_a_destruction_a_person_started(): void
     {
         $this->artisan('clinicaldocumentation:resume-destruction', ['destruction' => (string) \Illuminate\Support\Str::uuid()])->assertFailed();
