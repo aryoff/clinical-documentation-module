@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Modules\ClinicalDocumentation\Support;
 
 /**
- * The one narrow exception to this module's immutability guards: clearing a copy of findings under an approved
+ * The one narrow exception to this module's immutability guards: clearing a copy of findings under an authorized
  * retention destruction. Open only while one step runs; it closes even when that step throws.
  */
 final class RetentionDestruction

@@ -75,7 +75,7 @@ final class DestructionCustody
             RetentionDestruction::run(fn () => $evidence->update(['summary' => null, 'destroyed_at' => now()]));
         }
 
-        // This module is its own custodian: the receipt is the step itself, stable for a given proposal and copy.
+        // This module is its own custodian: the receipt is the step itself, stable for a given destruction and copy.
         return ['receipt_id' => 'own-'.substr(hash('sha256', $step['authorization_id'].':'.$step['ref_id']), 0, 40)];
     }
 }

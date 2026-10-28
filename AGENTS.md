@@ -107,7 +107,7 @@ This module makes extensive use of `module.json` for system integration:
 - **Icon Mapping**: `module.json` `"icon"` must be an exact PascalCase `lucide-react` export name present in the `menuIconComponents` allowlist in `resources/js/Assets/MenuIcons.tsx`. Do not add custom SVG wrappers for ordinary module menu icons (root ADR 0001).
 
 ## Testing
-- **Backend Tests**: `./vendor/bin/sail artisan test --parallel --processes=8 Modules/ClinicalDocumentation/tests --exclude-group=browser` — the `--exclude-group` matters. `phpunit.xml` excludes `Modules/*/tests/Browser` from the `Modules` suite, but naming a path on the command line bypasses that and would run the browser journey without a browser harness.
+- **Backend Tests**: `./vendor/bin/sail artisan test --parallel --processes=4 Modules/ClinicalDocumentation/tests --exclude-group=browser` — the `--exclude-group` matters. `phpunit.xml` excludes `Modules/*/tests/Browser` from the `Modules` suite, but naming a path on the command line bypasses that and would run the browser journey without a browser harness.
 - **Frontend Tests**: `npx vitest run Modules/ClinicalDocumentation/resources/assets/js`
 - **Browser Journey**: `./vendor/bin/sail vendor/bin/pest --configuration=phpunit.dusk.xml --group=clinical-authoring` — select by group, not by path; a path argument matches nothing against that configuration's suites.
 - **Permission coverage**: every string in `module.json` `permissions` is exercised at the HTTP boundary in both outcomes by `tests/Feature/ClinicalDocumentationAuthorizationTest.php`. Adding a permission means adding its authorized and its denied test there.
