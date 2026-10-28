@@ -192,6 +192,7 @@
     "retention.destruction_disabled": "Pemusnahan dinonaktifkan. Halaman ini hanya melaporkan apakah rekam boleh dipertimbangkan.",
     "retention.destruction_enabled": "Pemusnahan diaktifkan.",
     "retention.extension_until": "Disimpan karena masih berguna hingga",
+    "retention.hold_line": "Penahanan: :reason (ditetapkan oleh :by, :at)",
     "retention.holds": "Penahanan hukum",
     "retention.last_visit": "Kunjungan terakhir",
     "retention.lift_hold": "Cabut penahanan",

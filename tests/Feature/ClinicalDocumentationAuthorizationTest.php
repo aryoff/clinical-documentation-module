@@ -41,6 +41,35 @@ class ClinicalDocumentationAuthorizationTest extends TestCase
         $this->clinician = User::factory()->create();
     }
 
+    // clinicaldocumentation.retention.*
+
+    public function test_each_retention_ability_opens_only_its_own_actions(): void
+    {
+        $patient = Patient::factory()->create();
+        $cases = [
+            'view' => [fn () => $this->get(route('clinicaldocumentation.retention.index')), 200],
+            'schedule' => [fn () => $this->post(route('clinicaldocumentation.retention.schedules.store'), ['minimum_years' => 25, 'rationale' => 'Policy']), 302],
+            'hold' => [fn () => $this->post(route('clinicaldocumentation.retention.holds.store'), ['patient_id' => $patient->id, 'scope' => 'patient', 'reason' => 'Audit']), 302],
+            'extend' => [fn () => $this->post(route('clinicaldocumentation.retention.extensions.store'), ['patient_id' => $patient->id, 'retain_until' => '2099-01-01', 'reason' => 'Research']), 302],
+        ];
+
+        foreach ($cases as $ability => [$request, $granted]) {
+            // Authorized: the one ability alone is enough.
+            $holder = User::factory()->create();
+            $holder->givePermissionTo('clinicaldocumentation.retention.'.$ability);
+            $this->actingAs($holder);
+            $this->assertSame($granted, $request()->getStatusCode(), "{$ability} should open its own action");
+
+            // Denied: every other retention ability together is not.
+            $others = User::factory()->create();
+            foreach (array_diff(array_keys($cases), [$ability]) as $other) {
+                $others->givePermissionTo('clinicaldocumentation.retention.'.$other);
+            }
+            $this->actingAs($others);
+            $this->assertSame(403, $request()->getStatusCode(), "{$ability} should be refused without it");
+        }
+    }
+
     // clinicaldocumentation.records.read
 
     public function test_the_document_list_is_forbidden_without_the_read_permission(): void

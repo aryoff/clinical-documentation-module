@@ -40,6 +40,7 @@ test('a records officer records a schedule, holds a patient and reads why their 
     $page->navigate('/clinical-documentation/retention/patients/'.$patient->id)
         ->assertSee('Retention review')
         ->assertSee('A legal hold is active.')
+        ->assertSee('Hold: Complaint under investigation')
         ->assertSee('Must be retained')
         ->assertDontSee('May be considered for destruction review');
 });

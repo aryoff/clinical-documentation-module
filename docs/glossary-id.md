@@ -25,3 +25,9 @@ Preferred Indonesian wording for the ClinicalDocumentation UI. `provisional` ter
 | ClinicalDocumentation (menu) | Dokumentasi Klinis | — | provisional | — |
 | EMR Notes Dashboard (menu) | Dasbor Catatan RME | — | provisional | — |
 | Clinical Access Audit (menu) | Audit Akses Klinis | — | provisional | — |
+| Clinical record retention | Retensi rekam klinis | — | provisional | — |
+| Retention schedule | Jadwal retensi | — | provisional | — |
+| Legal hold | Penahanan hukum | Blokir | provisional | — |
+| Continuing usefulness | Masih berguna | — | provisional | — |
+| Patient last visit | Kunjungan terakhir pasien | — | provisional | — |
+| Attendance coverage | Cakupan kunjungan | — | provisional | — |

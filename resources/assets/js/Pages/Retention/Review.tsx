@@ -60,6 +60,13 @@ const Review = ({ review }: ReviewProps) => {
             <p id={"review-outcome"}>
               <Badge variant={review.eligible_for_review ? "secondary" : "destructive"}>{review.eligible_for_review ? t("retention.may_be_reviewed") : t("retention.must_be_retained")}</Badge>
             </p>
+            {review.holds.length > 0 && (
+              <ul id={"review-holds"} className={"list-disc pl-6"}>
+                {review.holds.map((hold) => (
+                  <li key={hold.id}>{t("retention.hold_line", { reason: hold.reason, by: hold.placed_by_name ?? missing, at: when(hold.placed_at) })}</li>
+                ))}
+              </ul>
+            )}
             {review.blockers.length > 0 && (
               <ul id={"review-blockers"} className={"list-disc pl-6"}>
                 {review.blockers.map((code) => (

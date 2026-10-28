@@ -10,12 +10,14 @@ use Modules\ClinicalDocumentation\Contracts\DiagnosisAssertionFactPublisher;
 use Modules\ClinicalDocumentation\Contracts\DischargeDocumentationContract;
 use Modules\ClinicalDocumentation\Contracts\EmergencyAccessReviewPort;
 use Modules\ClinicalDocumentation\Contracts\HospitalRegistrationPort;
+use Modules\ClinicalDocumentation\Contracts\PatientLastVisitPort;
 use Modules\ClinicalDocumentation\Listeners\ReassignReconciledPatient;
 use Modules\ClinicalDocumentation\Listeners\ProjectAdministrationClinicalFact;
 use Modules\ClinicalDocumentation\Services\ActiveClinicalRecordService;
 use Modules\ClinicalDocumentation\Services\DischargeDocumentationService;
 use Modules\ClinicalDocumentation\Services\Capabilities\CapabilityEmergencyAccessReview;
 use Modules\ClinicalDocumentation\Services\Capabilities\CapabilityHospitalRegistration;
+use Modules\ClinicalDocumentation\Services\Capabilities\CapabilityPatientLastVisit;
 
 class ClinicalDocumentationServiceProvider extends ServiceProvider
 {
@@ -76,8 +78,8 @@ class ClinicalDocumentationServiceProvider extends ServiceProvider
         $this->app->register(RouteServiceProvider::class);
         // Scoped: it answers from whichever composition is running, and a long-lived worker must not keep a stale one.
         $this->app->scoped(
-            \Modules\ClinicalDocumentation\Contracts\PatientLastVisitPort::class,
-            \Modules\ClinicalDocumentation\Services\Capabilities\CapabilityPatientLastVisit::class,
+            PatientLastVisitPort::class,
+            CapabilityPatientLastVisit::class,
         );
         $this->app->singleton(
             ActiveClinicalRecordContract::class,
