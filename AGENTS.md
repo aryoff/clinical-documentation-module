@@ -77,7 +77,7 @@ Last Visit, and custodians (Laboratory and others) execute destruction steps whe
 - **Last visit by capability ID**: `PatientLastVisitPort` forwards to `hospitalcore.patient-last-visit` (optional); absence reads as
   `last_visit_unavailable`.
 
-## Clinical Disclosure Authorization
+## Clinical Information Disclosure Authorization
 
 Root ADR 0034 / #474. This module owns who may be handed a result; Laboratory (and any later consumer) records what was actually delivered.
 

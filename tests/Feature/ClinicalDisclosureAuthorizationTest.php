@@ -164,7 +164,7 @@ class ClinicalDisclosureAuthorizationTest extends TestCase
     public function test_representative_authority_needs_established_evidence_and_not_just_a_relationship(): void
     {
         $request = $this->request(['recipient_name' => 'Mother', 'recipient_relationship' => 'parent']);
-        $this->verify($request, ['basis' => 'representative_authority', 'verified_identity_of' => 'recipient'])->assertSessionHasErrors(['authority_evidence_kind', 'evidence_reference']);
+        $this->verify($request, ['basis' => 'representative_authority', 'verified_identity_of' => 'recipient', 'evidence_reference' => null])->assertSessionHasErrors(['authority_evidence_kind', 'evidence_reference']);
 
         $this->verify($request, ['basis' => 'representative_authority', 'verified_identity_of' => 'recipient', 'authority_evidence_kind' => 'guardianship_document', 'evidence_reference' => 'GD-2026-17'])->assertRedirect();
 
@@ -209,7 +209,7 @@ class ClinicalDisclosureAuthorizationTest extends TestCase
         $granted = $this->authorize($request, 'result-v1', true);
 
         // A later, weaker verification changes the next decision, never the meaning of the one already granted.
-        $this->verify($request, ['basis' => 'representative_authority', 'verified_identity_of' => 'recipient', 'authority_evidence_kind' => 'guardianship_document'])->assertSessionHasErrors('evidence_reference');
+        $this->verify($request, ['basis' => 'representative_authority', 'verified_identity_of' => 'recipient', 'authority_evidence_kind' => 'guardianship_document', 'evidence_reference' => null])->assertSessionHasErrors('evidence_reference');
         $this->verify($request, ['basis' => 'patient_authorization', 'verified_identity_of' => 'recipient', 'consent_id' => $this->consent(['recipient_name' => 'Other'])]);
 
         $this->assertRefused($this->authorize($request, 'result-v2', true), 'consent_recipient_mismatch');
@@ -245,7 +245,7 @@ class ClinicalDisclosureAuthorizationTest extends TestCase
     {
         $request = $this->request(['recipient_name' => 'Court clerk', 'recipient_relationship' => 'other']);
         $this->verify($request, ['basis' => 'statutory', 'verified_identity_of' => 'recipient', 'statutory_basis' => 'made_up_basis', 'evidence_reference' => 'X'])->assertSessionHasErrors('statutory_basis');
-        $this->verify($request, ['basis' => 'statutory', 'verified_identity_of' => 'recipient', 'statutory_basis' => 'court_order'])->assertSessionHasErrors('evidence_reference');
+        $this->verify($request, ['basis' => 'statutory', 'verified_identity_of' => 'recipient', 'statutory_basis' => 'court_order', 'evidence_reference' => null])->assertSessionHasErrors('evidence_reference');
 
         $this->verify($request, ['basis' => 'statutory', 'verified_identity_of' => 'recipient', 'statutory_basis' => 'court_order', 'evidence_reference' => 'PN-88/2026'])->assertRedirect();
 
@@ -255,12 +255,19 @@ class ClinicalDisclosureAuthorizationTest extends TestCase
         $this->assertDatabaseCount('cd_disclosure_consents', 0);
     }
 
+    public function test_self_access_needs_the_supporting_evidence_too_not_only_a_method(): void
+    {
+        $request = $this->request(['recipient_name' => 'Self', 'recipient_relationship' => 'self']);
+
+        $this->verify($request, ['basis' => 'patient_self_access', 'verified_identity_of' => 'patient', 'evidence_reference' => null])->assertSessionHasErrors('evidence_reference');
+    }
+
     public function test_a_verification_keeps_only_the_evidence_its_basis_relied_on(): void
     {
         $request = $this->request(['recipient_name' => 'Self', 'recipient_relationship' => 'self']);
         $this->verify($request, ['basis' => 'patient_self_access', 'verified_identity_of' => 'patient', 'authority_evidence_kind' => 'power_of_attorney', 'evidence_reference' => 'STRAY-1'])->assertRedirect();
 
-        $this->assertDatabaseHas('cd_disclosure_verifications', ['request_id' => $request, 'authority_evidence_kind' => null, 'evidence_reference' => null]);
+        $this->assertDatabaseHas('cd_disclosure_verifications', ['request_id' => $request, 'authority_evidence_kind' => null, 'evidence_reference' => 'STRAY-1']);
     }
 
     public function test_verification_records_who_checked_when_and_how(): void
@@ -357,7 +364,7 @@ class ClinicalDisclosureAuthorizationTest extends TestCase
     /** @param array<string, mixed> $payload */
     private function verify(string $request, array $payload): \Illuminate\Testing\TestResponse
     {
-        return $this->actingAs($this->officer)->post(route('clinicaldocumentation.disclosure.verifications.store', $request), array_merge(['method' => 'identity_card'], $payload));
+        return $this->actingAs($this->officer)->post(route('clinicaldocumentation.disclosure.verifications.store', $request), array_merge(['method' => 'identity_card', 'evidence_reference' => 'ID-REF-1'], $payload));
     }
 
     /** @param array<string, mixed> $overrides */

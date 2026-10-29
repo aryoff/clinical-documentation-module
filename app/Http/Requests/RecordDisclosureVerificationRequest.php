@@ -26,7 +26,7 @@ class RecordDisclosureVerificationRequest extends FormRequest
             'consent_id' => ['required_if:basis,patient_authorization', 'nullable', 'uuid'],
             'authority_evidence_kind' => ['required_if:basis,representative_authority', 'nullable', Rule::in((array) config('clinicaldocumentation.disclosure.representative_evidence_kinds'))],
             'statutory_basis' => ['required_if:basis,statutory', 'nullable', Rule::in((array) config('clinicaldocumentation.disclosure.statutory_bases'))],
-            'evidence_reference' => ['required_if:basis,representative_authority,statutory', 'nullable', 'string', 'max:200'],
+            'evidence_reference' => ['required_if:basis,patient_self_access,representative_authority,statutory', 'nullable', 'string', 'max:200'],
         ];
     }
 }
