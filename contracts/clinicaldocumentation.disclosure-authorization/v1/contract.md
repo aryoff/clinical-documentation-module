@@ -20,7 +20,7 @@ request_id, patient_id   string  the Clinical Disclosure Request and the patient
 ref_type, ref_id         string  the exact result version, e.g. 'laboratory_result' / result id
 lineage_id               string  the stable result line the version belongs to (consent and request scope are lineage ids)
 is_current_version       bool    false asks for a superseded (historical) copy
-returns                  { authorized, reason, authorization_id, basis, recipient_name, historical_copy, request_id, ref_type, ref_id, lineage_id }
+returns                  { authorized, reason, authorization_id, basis, recipient_name, historical_copy, request_id } plus { ref_type, ref_id, lineage_id } on a granted answer only
 ```
 
 Every call about a known request records one insert-only decision, granted or refused, naming the verification and consent it relied on. A call about an unknown request or another patient's request is refused as `unknown_request` and records nothing (there is no request to attach it to); the consumer's own audit records that attempt. `authorization_id` is set only when `authorized`. `is_current_version` is the consumer's claim: the consumer owns version state and must pass the truth. A superseded version is

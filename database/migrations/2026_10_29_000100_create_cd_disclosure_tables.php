@@ -37,7 +37,7 @@ return new class extends Migration
             $table->uuid('patient_id');
             $table->string('recipient_name', 120);
             $table->string('purpose', 200);
-            $table->json('scope_refs')->nullable();
+            $table->json('scope_refs');
             $table->date('valid_from');
             $table->date('valid_until');
             // Where the signed document is kept; never returned through the capability or the audit view.
