@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\ClinicalDocumentation\Services;
 
+use Modules\ClinicalDocumentation\Exceptions\CapabilityUnavailable;
 use Modules\ClinicalDocumentation\Models\DiagnosticResultEvidence;
 use Modules\ClinicalDocumentation\Support\CapabilityGateway;
 use Modules\ClinicalDocumentation\Support\RetentionDestruction;
@@ -65,7 +66,11 @@ final class DestructionCustody
     public function destroy(string $custodian, array $step): array
     {
         if ($custodian === self::LABORATORY) {
-            $receipt = $this->gateway->call(self::LABORATORY_CAPABILITY, 'destroy', [$step]);
+            $receipt = $this->gateway->callIfAvailable(self::LABORATORY_CAPABILITY, 'destroy', [$step]);
+            // The copy is Laboratory's to destroy: with no Laboratory composed there is nobody who can, and no receipt to invent.
+            if (! is_array($receipt)) {
+                throw CapabilityUnavailable::required(self::LABORATORY_CAPABILITY);
+            }
 
             return ['receipt_id' => (string) $receipt['receipt_id']];
         }
