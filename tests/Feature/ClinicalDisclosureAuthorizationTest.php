@@ -325,7 +325,7 @@ class ClinicalDisclosureAuthorizationTest extends TestCase
         $this->assertArrayNotHasKey('evidence_reference', $answer);
     }
 
-    public function test_every_refusal_is_recorded_as_a_decision(): void
+    public function test_every_refusal_on_a_known_request_is_recorded_as_a_decision(): void
     {
         $request = $this->request(['recipient_name' => 'Wife', 'recipient_relationship' => 'spouse']);
 
