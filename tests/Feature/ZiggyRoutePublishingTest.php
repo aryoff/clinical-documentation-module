@@ -62,6 +62,12 @@ class ZiggyRoutePublishingTest extends TestCase
             "clinicaldocumentation.archive",
         ],
         "clinicaldocumentation.audit.view" => ["clinicaldocumentation.audit"],
+        "clinicaldocumentation.disclosure.manage" => [
+            "clinicaldocumentation.disclosure.requests.store",
+            "clinicaldocumentation.disclosure.verifications.store",
+            "clinicaldocumentation.disclosure.consents.store",
+            "clinicaldocumentation.disclosure.consents.withdraw",
+        ],
     ];
 
     /** Routes available only when the optional HospitalCore provider is composed. */
