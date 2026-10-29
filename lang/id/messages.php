@@ -38,4 +38,5 @@ return [
     "assertion_type_initial" => "awal",
     "assertion_type_supplement" => "tambahan",
     "assertion_type_supersession" => "penggantian",
+    "disclosure_consent_not_found" => "Persetujuan pengungkapan tidak ditemukan untuk pasien ini.",
 ];

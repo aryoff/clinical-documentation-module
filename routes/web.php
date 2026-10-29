@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use Modules\ClinicalDocumentation\Http\Controllers\ClinicalDisclosureController;
 use Modules\ClinicalDocumentation\Http\Controllers\ClinicalDocumentationController;
 use Modules\ClinicalDocumentation\Http\Controllers\ClinicalRecordDestructionController;
 use Modules\ClinicalDocumentation\Http\Controllers\ClinicalRecordRetentionController;
@@ -29,6 +30,13 @@ Route::middleware(["web", "auth"])->prefix("clinical-documentation/retention")->
     Route::get("/destruction", [ClinicalRecordDestructionController::class, "index"])->name("destruction.index");
     Route::post("/patients/{patient}/destroy", [ClinicalRecordDestructionController::class, "destroy"])->whereUuid("patient")->name("destroy");
     Route::post("/destruction/{destruction}/resume", [ClinicalRecordDestructionController::class, "resume"])->whereUuid("destruction")->name("destruction.resume");
+});
+
+Route::middleware(["web", "auth"])->prefix("clinical-documentation/disclosure")->name("clinicaldocumentation.disclosure.")->group(function () {
+    Route::post("/requests", [ClinicalDisclosureController::class, "storeRequest"])->name("requests.store");
+    Route::post("/requests/{disclosureRequest}/verification", [ClinicalDisclosureController::class, "storeVerification"])->whereUuid("disclosureRequest")->name("verifications.store");
+    Route::post("/consents", [ClinicalDisclosureController::class, "storeConsent"])->name("consents.store");
+    Route::post("/consents/{consent}/withdraw", [ClinicalDisclosureController::class, "withdrawConsent"])->whereUuid("consent")->name("consents.withdraw");
 });
 
 Route::middleware(["web", "auth"])->group(function () {

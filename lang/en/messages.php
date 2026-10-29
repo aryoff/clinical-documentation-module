@@ -38,4 +38,5 @@ return [
     "assertion_type_initial" => "initial",
     "assertion_type_supplement" => "supplement",
     "assertion_type_supersession" => "supersession",
+    "disclosure_consent_not_found" => "The disclosure consent was not found for this patient.",
 ];

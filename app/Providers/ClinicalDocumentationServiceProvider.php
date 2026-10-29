@@ -76,6 +76,10 @@ class ClinicalDocumentationServiceProvider extends ServiceProvider
     {
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
+        $this->app->singleton(
+            \Modules\ClinicalDocumentation\Contracts\DisclosureAuthorizationContract::class,
+            \Modules\ClinicalDocumentation\Services\DisclosureAuthorization::class,
+        );
         // Scoped: it reaches custodians by capability ID and answers from whichever composition is running.
         $this->app->scoped(
             \Modules\ClinicalDocumentation\Contracts\DestructionAuthorizationContract::class,

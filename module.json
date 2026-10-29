@@ -21,12 +21,23 @@
         "clinicaldocumentation.retention.schedule",
         "clinicaldocumentation.retention.hold",
         "clinicaldocumentation.retention.extend",
-        "clinicaldocumentation.retention.destroy"
+        "clinicaldocumentation.retention.destroy",
+        "clinicaldocumentation.disclosure.manage"
     ],
     "dictionary": [],
     "require": [],
     "capabilities": {
         "provides": [
+            {
+                "id": "clinicaldocumentation.disclosure-authorization",
+                "version": "1.0.0",
+                "modes": ["sync"],
+                "contracts": {
+                    "sync": "contracts/clinicaldocumentation.disclosure-authorization/v1/contract.md"
+                },
+                "providerContractTest": "tests/Contract/DisclosureAuthorizationContractTest.php",
+                "binding": "Modules\\ClinicalDocumentation\\Contracts\\DisclosureAuthorizationContract"
+            },
             {
                 "id": "clinicaldocumentation.destruction-authorization",
                 "version": "1.0.0",

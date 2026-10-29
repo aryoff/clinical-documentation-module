@@ -70,6 +70,26 @@ class ClinicalDocumentationAuthorizationTest extends TestCase
         }
     }
 
+    // clinicaldocumentation.disclosure.manage
+
+    public function test_the_disclosure_ability_opens_the_disclosure_workflow_and_nothing_else_does(): void
+    {
+        $patient = Patient::factory()->create();
+        $request = fn () => $this->post(route('clinicaldocumentation.disclosure.requests.store'), ['patient_id' => $patient->id, 'recipient_name' => 'Self', 'recipient_relationship' => 'self', 'purpose' => 'continuing care', 'scope_refs' => ['line-1']]);
+
+        $holder = User::factory()->create();
+        $holder->givePermissionTo('clinicaldocumentation.disclosure.manage');
+        $this->actingAs($holder);
+        $request()->assertRedirect()->assertSessionHasNoErrors();
+
+        $others = User::factory()->create();
+        foreach (['records.read', 'audit.view', 'retention.view', 'retention.hold'] as $other) {
+            $others->givePermissionTo('clinicaldocumentation.'.$other);
+        }
+        $this->actingAs($others);
+        $this->assertSame(403, $request()->getStatusCode());
+    }
+
     // clinicaldocumentation.retention.destroy
 
     public function test_the_destroy_ability_opens_destruction_and_nothing_else_does(): void

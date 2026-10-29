@@ -9,4 +9,11 @@ return [
         // Destruction executes only when this is switched on; off by default.
         'destruction_enabled' => (bool) env('CLINICALDOCUMENTATION_DESTRUCTION_ENABLED', false),
     ],
+    'disclosure' => [
+        // Facility-configurable, not a legal enumeration: the non-consensual routes a Disclosure Officer may record as the
+        // basis, each carrying its own request evidence.
+        // What can establish a representative's authority; a relationship such as "parent" does not.
+        'representative_evidence_kinds' => ['guardianship_document', 'court_appointment', 'power_of_attorney'],
+        'statutory_bases' => ['court_order', 'statutory_authority_request', 'public_health_obligation'],
+    ],
 ];

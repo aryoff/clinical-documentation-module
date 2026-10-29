@@ -77,6 +77,20 @@ Last Visit, and custodians (Laboratory and others) execute destruction steps whe
 - **Last visit by capability ID**: `PatientLastVisitPort` forwards to `hospitalcore.patient-last-visit` (optional); absence reads as
   `last_visit_unavailable`.
 
+## Clinical Disclosure Authorization
+
+Root ADR 0034 / #474. This module owns who may be handed a result; Laboratory (and any later consumer) records what was actually delivered.
+
+- **Capability** `clinicaldocumentation.disclosure-authorization` (`DisclosureAuthorizationContract`): `authorize(...)` decides for ONE exact result version and records an
+  insert-only `cd_disclosure_decisions` row, granted or refused; `recheck(authorization_id)` re-evaluates a granted decision (a consent withdrawn or expired since refuses it).
+  Specification: `contracts/clinicaldocumentation.disclosure-authorization/v1/contract.md`.
+- **Entitlement is the verified basis** (`patient_self_access`, `patient_authorization`, `representative_authority`, `statutory`), never the recipient's relationship, a staff read
+  permission, payment or a channel. Self-access and statutory routes carry no consent; only a consent to *disclose* can be recorded (registration/treatment consent is refused at the door).
+  Statutory bases are the configurable `clinicaldocumentation.disclosure.statutory_bases` list.
+- **Evidence tables are insert-only** (`cd_disclosure_requests`, `_verifications`, `_decisions`); `cd_disclosure_consents` is only ever withdrawn, once. `evidence_reference` (where the signed
+  consent is kept) is never returned by the capability.
+- **Ability** `clinicaldocumentation.disclosure.manage` (not a clinical authority) gates the Disclosure Officer routes in plain FormRequests. There is no UI page yet.
+
 ## Clinical Audit Standards
 - **Access-as-Event (Log-on-Read)**: Every "Read" operation on a clinical document must be logged.
 - **Addendum-Only Immutability**: Once a clinical document is signed, it is immutable. Corrections must be created as linked `ClinicalAddendum` records that preserve the original. A *document* has no `superseded` state.
