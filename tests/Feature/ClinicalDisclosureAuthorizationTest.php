@@ -255,11 +255,12 @@ class ClinicalDisclosureAuthorizationTest extends TestCase
         $this->assertDatabaseCount('cd_disclosure_consents', 0);
     }
 
-    public function test_self_access_needs_the_supporting_evidence_too_not_only_a_method(): void
+    public function test_every_verification_needs_the_evidence_it_checked_identity_against_not_only_a_method(): void
     {
-        $request = $this->request(['recipient_name' => 'Self', 'recipient_relationship' => 'self']);
+        $request = $this->request(['recipient_name' => 'Wife', 'recipient_relationship' => 'spouse', 'purpose' => 'continuing care']);
 
         $this->verify($request, ['basis' => 'patient_self_access', 'verified_identity_of' => 'patient', 'evidence_reference' => null])->assertSessionHasErrors('evidence_reference');
+        $this->verify($request, ['basis' => 'patient_authorization', 'verified_identity_of' => 'recipient', 'consent_id' => $this->consent(), 'evidence_reference' => null])->assertSessionHasErrors('evidence_reference');
     }
 
     public function test_a_verification_keeps_only_the_evidence_its_basis_relied_on(): void

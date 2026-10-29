@@ -50,8 +50,8 @@ final class DisclosureRecords
             'consent_id' => $data['basis'] === 'patient_authorization' ? $data['consent_id'] : null,
             'authority_evidence_kind' => $data['basis'] === 'representative_authority' ? $data['authority_evidence_kind'] : null,
             'statutory_basis' => $data['basis'] === 'statutory' ? $data['statutory_basis'] : null,
-            // Only the evidence the basis relied on is kept: this row is the proof of why a result was handed over.
-            'evidence_reference' => in_array($data['basis'], ['patient_self_access', 'representative_authority', 'statutory'], true) ? $data['evidence_reference'] : null,
+            // What the officer checked the recipient's identity against, whatever the basis: this row is the proof of why a result was handed over.
+            'evidence_reference' => $data['evidence_reference'],
             'verified_by' => $actorId,
             'verified_by_name' => $this->name($actorId),
             'verified_at' => now(),

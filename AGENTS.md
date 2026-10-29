@@ -87,6 +87,7 @@ Root ADR 0034 / #474. This module owns who may be handed a result; Laboratory (a
 - **Entitlement is the verified basis** (`patient_self_access`, `patient_authorization`, `representative_authority`, `statutory`), never the recipient's relationship, a staff read
   permission, payment or a channel. Self-access and statutory routes carry no consent; only a consent to *disclose* can be recorded (registration/treatment consent is refused at the door).
   Statutory bases are the configurable `clinicaldocumentation.disclosure.statutory_bases` list.
+- **Every verification records the evidence it checked identity against** (`evidence_reference`), whatever the basis; a consent's own `evidence_reference` is where the signed consent is kept, a different thing.
 - **Evidence tables are insert-only** (`cd_disclosure_requests`, `_verifications`, `_decisions`); `cd_disclosure_consents` is only ever withdrawn, once. `evidence_reference` (where the signed
   consent is kept) is never returned by the capability.
 - **Plural JSON columns**: `scope_refs` and `historical_copy_refs` are JSON collections, so their names are plural on purpose (the singular-column rule in database/AGENTS.md is for scalar columns).
