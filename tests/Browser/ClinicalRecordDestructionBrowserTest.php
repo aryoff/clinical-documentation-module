@@ -26,6 +26,9 @@ test('a records officer destroys the findings of a patient past retention and re
     }
     config(['hospitalcore.attendance.reporting_modules' => [], 'hospitalcore.attendance.expected_providers' => ['laboratory'], 'clinicaldocumentation.retention.destruction_enabled' => true]);
     app(ClinicalRecordRetention::class)->recordSchedule(25, 'Facility policy', (string) $officer->id);
+    if (! \Tests\Support\ModuleUnderTest::isEnabled('Laboratory') || ! class_exists(Walk::class)) {
+        test()->markTestSkipped('Laboratory is not composed here.');
+    }
     $walk = Walk::released('4.2');
     $patientId = $walk['registration']['patient_id'];
     $evidence = app(AttendanceEvidenceContract::class);

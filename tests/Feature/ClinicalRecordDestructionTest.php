@@ -17,6 +17,7 @@ use Modules\Laboratory\Contracts\RecordCustodyContract;
 use Modules\Laboratory\Models\LabResult;
 use Modules\Laboratory\Services\ResultService;
 use Modules\Laboratory\Tests\Support\Walk;
+use Tests\Support\ModuleUnderTest;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -44,6 +45,10 @@ class ClinicalRecordDestructionTest extends TestCase
         config(['hospitalcore.attendance.reporting_modules' => [], 'hospitalcore.attendance.expected_providers' => ['laboratory'], 'clinicaldocumentation.retention.destruction_enabled' => true]);
         $this->officer = $this->holder(['view', 'destroy']);
         app(ClinicalRecordRetention::class)->recordSchedule(25, 'Policy', (string) $this->officer->id);
+        // Destruction is exercised against a real Laboratory custodian, so a composition without one has nothing to run.
+        if (! ModuleUnderTest::isEnabled('Laboratory') || ! class_exists(Walk::class)) {
+            $this->markTestSkipped('Laboratory is not composed here.');
+        }
         $this->walk = Walk::released('4.2');
         $this->patientId = $this->walk['registration']['patient_id'];
         $this->attend('lab-old', '2000-01-01 09:00:00');
