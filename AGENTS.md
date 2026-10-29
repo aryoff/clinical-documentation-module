@@ -89,6 +89,7 @@ Root ADR 0034 / #474. This module owns who may be handed a result; Laboratory (a
   Statutory bases are the configurable `clinicaldocumentation.disclosure.statutory_bases` list.
 - **Evidence tables are insert-only** (`cd_disclosure_requests`, `_verifications`, `_decisions`); `cd_disclosure_consents` is only ever withdrawn, once. `evidence_reference` (where the signed
   consent is kept) is never returned by the capability.
+- **Plural JSON columns**: `scope_refs` and `historical_copy_refs` are JSON collections, so their names are plural on purpose (the singular-column rule in database/AGENTS.md is for scalar columns).
 - **Indexes**: the disclosure evidence tables are looked up by request or patient (ascending `(request_id, …)`/`(patient_id, created_at)`), not listed newest-first by actor, so they deliberately do not carry the `(causer_id, created_at DESC)` audit indexes of Modules/AGENTS.md; Laboratory's access events, which auditors list newest-first, do.
 - **Ability** `clinicaldocumentation.disclosure.manage` (not a clinical authority) gates the Disclosure Officer routes in plain FormRequests. There is no UI page yet.
 
