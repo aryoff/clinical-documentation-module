@@ -107,9 +107,16 @@ class DiagnosisLineageContractTest extends TestCase
         $signed = $this->signedDocument();
         $actor = (string) $this->clinician->id;
         $this->records->assertDiagnosis($this->diagnosis($signed, 'E11.9', 'Type 2 diabetes mellitus', 'initial'), $actor);
+        app()->setLocale('id');
 
-        $this->expectException(\LogicException::class);
-        $this->records->assertDiagnosis($this->diagnosis($signed, 'I10', 'Essential hypertension', 'initial'), $actor);
+        try {
+            $this->records->assertDiagnosis($this->diagnosis($signed, 'I10', 'Essential hypertension', 'initial'), $actor);
+        } catch (\LogicException $exception) {
+            $this->assertInstanceOf(\App\Exceptions\UserFacingException::class, $exception);
+            $this->assertSame('Perjalanan perawatan ini sudah memiliki Penetapan Diagnosis awal; tambahkan atau gantikan penetapan itu.', $exception->getMessage());
+            return;
+        }
+        $this->fail('A second initial assertion must be refused.');
     }
 
     /**

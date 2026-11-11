@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\ClinicalDocumentation\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
 /** Creating the draft. See CreateClinicalDocumentRequest for why this gates here. */
-class StoreClinicalDocumentRequest extends FormRequest
+class StoreClinicalDocumentRequest extends ClinicalFormRequest
 {
     public function authorize(): bool
     {

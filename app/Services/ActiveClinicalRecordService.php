@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\ClinicalDocumentation\Services;
 
+use Modules\ClinicalDocumentation\Exceptions\DiagnosisLineageRefusal;
+use Modules\ClinicalDocumentation\Exceptions\InvalidDiagnosisAssertion;
+
 use App\Models\User;
 use Modules\ClinicalDocumentation\Support\ClinicalPatientIdentity;
 use App\Support\CapabilityRegistry;
@@ -498,13 +501,13 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
                 $command["code"],
             ) !== 1
         ) {
-            throw new \InvalidArgumentException(
+            throw new InvalidDiagnosisAssertion(
                 __("clinicaldocumentation::messages.diagnosis_needs_icd"),
             );
         }
         $assertionType = $command["assertion_type"];
         if (!in_array($assertionType, self::ASSERTION_TYPES, true)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidDiagnosisAssertion(
                 __("clinicaldocumentation::messages.diagnosis_type_invalid"),
             );
         }
@@ -523,12 +526,12 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
                 ->exists();
 
             if ($assertionType === "initial" && $openedJourney) {
-                throw new \LogicException(
+                throw new DiagnosisLineageRefusal(
                     __("clinicaldocumentation::messages.diagnosis_initial_exists"),
                 );
             }
             if ($assertionType !== "initial" && !$openedJourney) {
-                throw new \LogicException(
+                throw new DiagnosisLineageRefusal(
                     __("clinicaldocumentation::messages.diagnosis_first_must_be_initial"),
                 );
             }
@@ -903,7 +906,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             return [];
         }
         if (!is_array($ids) || array_filter($ids, "is_string") !== $ids) {
-            throw new \InvalidArgumentException(
+            throw new InvalidDiagnosisAssertion(
                 __("clinicaldocumentation::messages.evidence_citations_list"),
             );
         }
@@ -915,7 +918,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             ->pluck("id")
             ->all();
         if (count($found) !== count($ids)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidDiagnosisAssertion(
                 __("clinicaldocumentation::messages.diagnosis_evidence_other_patient"),
             );
         }
@@ -933,7 +936,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             ->where("patient_id", $patientId)
             ->first();
         if ($predecessor === null) {
-            throw new \InvalidArgumentException(
+            throw new InvalidDiagnosisAssertion(
                 __("clinicaldocumentation::messages.superseded_other_patient"),
             );
         }
@@ -942,7 +945,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
                 ->where("supersedes_assertion_id", $predecessor->id)
                 ->exists()
         ) {
-            throw new \LogicException(
+            throw new DiagnosisLineageRefusal(
                 __("clinicaldocumentation::messages.already_superseded"),
             );
         }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\ClinicalDocumentation\Http\Controllers;
 
+use App\Support\UserFacingErrors;
+
 use App\Http\Controllers\Controller;
 use App\Services\FileVaultService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -447,8 +449,8 @@ class ClinicalDocumentationController extends Controller
                 $command,
                 (string) $request->user()->id,
             );
-        } catch (\LogicException | \InvalidArgumentException $exception) {
-            return back()->withErrors(["code" => $exception->getMessage()]);
+        } catch (\LogicException $exception) {
+            return back()->withErrors(["code" => app(UserFacingErrors::class)->message($exception)]);
         }
 
         return redirect()

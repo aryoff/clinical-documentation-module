@@ -143,11 +143,11 @@ const AddendumActionBar = ({ document }: Pick<ShowProps, "document">) => {
     return <form className={"space-y-4 p-5"} onSubmit={amend}>
         <div>
             <p className={"text-xs font-semibold tracking-wider text-muted-foreground uppercase"}>{t("show.linked_correction")}</p>
-            <h2 className={"mt-2 font-semibold text-foreground"}>{t("show.signed_addendum")}</h2>
+            <h2 className={"mt-2 font-semibold text-foreground"}>{t("shared.signed_addendum")}</h2>
         </div>
         <p className={"text-sm text-muted-foreground"}>{t("show.an_addendum_preserves_this")}</p>
         <div className={"space-y-2"}>
-            <Label htmlFor={"reason"}>{t("show.reason")}</Label>
+            <Label htmlFor={"reason"}>{t("shared.reason")}</Label>
             <Input id={"reason"} required placeholder={t("show.clarification_or_correction_reason")} value={reason} onChange={(event) => setReason(event.target.value)} />
         </div>
         <div className={"space-y-2"}>
@@ -200,7 +200,7 @@ const Show = ({ document, immutabilityNotice, canArchive, canAssertDiagnosis, di
     <div className={"mb-6 flex flex-wrap items-center justify-between gap-3"}>
         <p className={"text-sm text-muted-foreground"}>{t("show.signed_evidence_for_this")}</p>
         <div className={"flex flex-wrap gap-2"}>
-            <Button asChild variant={"outline"}><Link href={route("clinicaldocumentation.index")}>{t("show.back_to_documents")}</Link></Button>
+            <Button asChild variant={"outline"}><Link href={route("clinicaldocumentation.index")}>{t("shared.back_to_documents")}</Link></Button>
             {route().has("clinicaldocumentation.audit") && <Button asChild variant={"outline"}>
                 <Link href={route("clinicaldocumentation.audit", { document_id: document.document_id })}>{t("show.access_audit")}</Link>
             </Button>}
@@ -217,7 +217,7 @@ const Show = ({ document, immutabilityNotice, canArchive, canAssertDiagnosis, di
             <div className={"flex items-start justify-between gap-4"}>
                 <div>
                     <CardTitle>{document.template} <span className={"text-muted-foreground"}>{t("shared.template_version", { version: document.template_version })}</span></CardTitle>
-                    <CardDescription className={"mt-2"}>{t("shared.encountered_signed", { encountered: new Date(document.encountered_at).toLocaleString(), signed: document.signed_at ? new Date(document.signed_at).toLocaleString() : t("show.not_yet") })}</CardDescription>
+                    <CardDescription className={"mt-2"}>{t("shared.encountered_signed", { encountered: new Date(document.encountered_at).toLocaleString(), signed: document.signed_at ? new Date(document.signed_at).toLocaleString() : t("shared.not_yet") })}</CardDescription>
                 </div>
                 <Badge><FileLock2 className={"mr-1 size-3"} />{t(`shared.document_status.${document.status}`)}</Badge>
             </div>

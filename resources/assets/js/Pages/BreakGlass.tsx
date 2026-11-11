@@ -79,7 +79,7 @@ const BreakGlass = ({ documentId, document }: BreakGlassProps) => {
                     <div className={"flex items-start justify-between gap-4"}>
                         <div>
                             <CardTitle>{document.template} <span className={"text-muted-foreground"}>{t("shared.template_version", { version: document.template_version })}</span></CardTitle>
-                            <CardDescription className={"mt-2"}>{t("shared.encountered_signed", { encountered: new Date(document.encountered_at).toLocaleString(), signed: document.signed_at ? new Date(document.signed_at).toLocaleString() : t("break_glass.not_yet") })}</CardDescription>
+                            <CardDescription className={"mt-2"}>{t("shared.encountered_signed", { encountered: new Date(document.encountered_at).toLocaleString(), signed: document.signed_at ? new Date(document.signed_at).toLocaleString() : t("shared.not_yet") })}</CardDescription>
                         </div>
                         <code className={"rounded bg-muted px-2 py-1 text-xs"}>{document.correlation_id}</code>
                     </div>
@@ -92,7 +92,7 @@ const BreakGlass = ({ documentId, document }: BreakGlassProps) => {
                     <CardTitle className={"text-base"}>{t("break_glass.read_only_and_only")}</CardTitle>
                     <CardDescription>{t("break_glass.this_access_authorizes_no")}</CardDescription>
                 </CardHeader>
-                <CardContent><Button asChild variant={"outline"}><Link href={route("clinicaldocumentation.index")}>{t("break_glass.back_to_documents")}</Link></Button></CardContent>
+                <CardContent><Button asChild variant={"outline"}><Link href={route("clinicaldocumentation.index")}>{t("shared.back_to_documents")}</Link></Button></CardContent>
             </Card>
         </>
         : <Card>

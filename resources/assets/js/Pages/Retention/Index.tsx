@@ -56,7 +56,7 @@ const HoldForm = () => {
       <Label htmlFor={"hold-patient"}>{t("retention.patient_id")}</Label>
       <Input id={"hold-patient"} value={form.data.patient_id} onChange={(e) => form.setData("patient_id", e.target.value)} />
       <FieldError message={form.errors.patient_id} />
-      <Label htmlFor={"hold-reason"}>{t("retention.reason")}</Label>
+      <Label htmlFor={"hold-reason"}>{t("shared.reason")}</Label>
       <Input id={"hold-reason"} value={form.data.reason} onChange={(e) => form.setData("reason", e.target.value)} />
       <FieldError message={form.errors.reason} />
       <Button id={"place-hold"} type={"submit"} disabled={form.processing}>
@@ -156,7 +156,7 @@ const Index = ({ schedules, holds, floor_years, destruction_enabled }: IndexProp
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t("retention.patient_id")}</TableHead>
-                    <TableHead>{t("retention.reason")}</TableHead>
+                    <TableHead>{t("shared.reason")}</TableHead>
                     <TableHead>{t("retention.placed_by")}</TableHead>
                     <TableHead />
                   </TableRow>

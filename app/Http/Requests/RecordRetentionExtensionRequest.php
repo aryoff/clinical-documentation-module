@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\ClinicalDocumentation\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
 /**
  * Gates in authorize() rather than in route middleware, so the sidebar and Ziggy reflect it (Modules/AGENTS.md).
  * A plain FormRequest: Inertia form submissions break on an AJAX-aware one.
  */
-class RecordRetentionExtensionRequest extends FormRequest
+class RecordRetentionExtensionRequest extends ClinicalFormRequest
 {
     public function authorize(): bool
     {

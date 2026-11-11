@@ -34,7 +34,7 @@ const EditActionBar = ({ document }: { document: Document }) => {
         try {
             parsed = JSON.parse(payload);
         } catch {
-            alert(t("edit.payload_must_be_valid"));
+            alert(t("shared.payload_must_be_valid"));
 
             return;
         }
@@ -50,11 +50,11 @@ const EditActionBar = ({ document }: { document: Document }) => {
 
     return <form className={"space-y-4 p-5"} onSubmit={submit}>
         <div>
-            <p className={"text-xs font-semibold tracking-wider text-muted-foreground uppercase"}>{t("edit.private_draft")}</p>
+            <p className={"text-xs font-semibold tracking-wider text-muted-foreground uppercase"}>{t("shared.private_draft")}</p>
             <h2 className={"mt-2 font-semibold text-foreground"}>{t("edit.continue_authoring")}</h2>
         </div>
         <div className={"space-y-2"}>
-            <Label htmlFor={"payload"}>{t("edit.clinical_payload")}</Label>
+            <Label htmlFor={"payload"}>{t("shared.clinical_payload")}</Label>
             <Textarea id={"payload"} className={"min-h-80 font-mono text-xs"} value={payload} onChange={(event) => setPayload(event.target.value)} />
         </div>
         <Button className={"w-full"} disabled={processing}>{t("edit.save_draft")}</Button>
@@ -112,9 +112,9 @@ const Edit = ({ document, presentedExternalEvidence, reviewedExternalEvidence, p
             <CardContent className={"space-y-3"}>
                 {presentedExternalEvidence.map((evidence) => <div key={evidence.id} className={"rounded-md border p-4"} data-testid={"staged-external-evidence"}>
                     <p className={"font-medium"}>{evidence.claim}</p>
-                    <p className={"mt-1 text-sm text-muted-foreground"}>{t("shared.staged_by_line", { file: evidence.original_filename ?? t("edit.uploaded_file"), name: evidence.staged_by_name })}</p>
+                    <p className={"mt-1 text-sm text-muted-foreground"}>{t("shared.staged_by_line", { file: evidence.original_filename ?? t("shared.uploaded_file"), name: evidence.staged_by_name })}</p>
                     <div className={"mt-3 flex flex-wrap gap-2"}>
-                        {evidence.can_open_file && route().has("clinicaldocumentation.presented-external-evidence.file") && <Button asChild size={"sm"} variant={"outline"}><a href={evidence.file_url}>{t("edit.open_staged_file")}</a></Button>}
+                        {evidence.can_open_file && route().has("clinicaldocumentation.presented-external-evidence.file") && <Button asChild size={"sm"} variant={"outline"}><a href={evidence.file_url}>{t("shared.open_staged_file")}</a></Button>}
                         {route().has("clinicaldocumentation.presented-external-evidence.review") && <Button size={"sm"} onClick={() => router.post(route("clinicaldocumentation.presented-external-evidence.review", evidence.id), { document_id: document.id })}>{t("edit.review_for_authoring")}</Button>}
                     </div>
                 </div>)}

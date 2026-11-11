@@ -80,8 +80,8 @@ const Create = ({ registrationId, evidence }: CreateProps) => {
             <CardContent className={"space-y-3"}>
                 {evidence.length === 0 ? <p className={"text-sm text-muted-foreground"}>{t("create.no_evidence_has_been")}</p> : evidence.map((item) => <div key={item.id} className={"rounded-md border p-4"} data-testid={"staged-external-evidence"}>
                     <p className={"font-medium"}>{item.claim}</p>
-                    <p className={"mt-1 text-sm text-muted-foreground"}>{t("shared.staged_by_line", { file: item.original_filename ?? t("create.uploaded_file"), name: item.staged_by_name })}</p>
-                    {item.can_open_file && route().has("clinicaldocumentation.presented-external-evidence.file") && <Button asChild className={"mt-3"} size={"sm"} variant={"outline"}><a href={item.file_url}>{t("create.open_staged_file")}</a></Button>}
+                    <p className={"mt-1 text-sm text-muted-foreground"}>{t("shared.staged_by_line", { file: item.original_filename ?? t("shared.uploaded_file"), name: item.staged_by_name })}</p>
+                    {item.can_open_file && route().has("clinicaldocumentation.presented-external-evidence.file") && <Button asChild className={"mt-3"} size={"sm"} variant={"outline"}><a href={item.file_url}>{t("shared.open_staged_file")}</a></Button>}
                 </div>)}
             </CardContent>
         </Card>

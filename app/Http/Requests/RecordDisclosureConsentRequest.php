@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\ClinicalDocumentation\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
 /**
  * Only a consent to disclose can be recorded. Registration and treatment consent are different consents, so they are
  * refused here rather than accepted and ignored. A plain FormRequest: Inertia form submissions break on an AJAX-aware one.
  */
-class RecordDisclosureConsentRequest extends FormRequest
+class RecordDisclosureConsentRequest extends ClinicalFormRequest
 {
     public function authorize(): bool
     {

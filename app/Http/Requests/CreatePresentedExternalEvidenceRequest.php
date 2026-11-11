@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\ClinicalDocumentation\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Modules\ClinicalDocumentation\Services\PresentedExternalEvidenceService;
 
-class CreatePresentedExternalEvidenceRequest extends FormRequest
+class CreatePresentedExternalEvidenceRequest extends ClinicalFormRequest
 {
     public function authorize(): bool
     {

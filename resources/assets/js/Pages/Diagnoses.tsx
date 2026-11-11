@@ -13,7 +13,7 @@ const Diagnoses = ({ lineage }: { lineage: DiagnosisLineage }) => {
     <div className={"mb-6 flex flex-wrap items-center justify-between gap-3"}>
         <p className={"text-sm text-muted-foreground"}>{t("diagnoses.what_this_patient_has")}</p>
         {route().has("clinicaldocumentation.index") && <Button asChild variant={"outline"}>
-            <Link href={route("clinicaldocumentation.index")}>{t("diagnoses.back_to_documents")}</Link>
+            <Link href={route("clinicaldocumentation.index")}>{t("shared.back_to_documents")}</Link>
         </Button>}
     </div>
     <Card className={"mb-4"}>

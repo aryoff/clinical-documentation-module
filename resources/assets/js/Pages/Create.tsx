@@ -40,7 +40,7 @@ const CreateActionBar = ({ handoffId }: CreateProps) => {
         try {
             parsed = JSON.parse(payload);
         } catch {
-            alert(t("create.payload_must_be_valid"));
+            alert(t("shared.payload_must_be_valid"));
 
             return;
         }
@@ -54,7 +54,7 @@ const CreateActionBar = ({ handoffId }: CreateProps) => {
 
     return <form className={"space-y-4 p-5"} onSubmit={submit}>
         <div>
-            <p className={"text-xs font-semibold tracking-wider text-muted-foreground uppercase"}>{t("create.private_draft")}</p>
+            <p className={"text-xs font-semibold tracking-wider text-muted-foreground uppercase"}>{t("shared.private_draft")}</p>
             <h2 className={"mt-2 font-semibold text-foreground"}>{t("create.clinical_authoring")}</h2>
         </div>
         <div className={"space-y-2"}>
@@ -66,7 +66,7 @@ const CreateActionBar = ({ handoffId }: CreateProps) => {
             <Input id={"template-version"} value={data.template_version} onChange={(event) => setData("template_version", event.target.value)} />
         </div>
         <div className={"space-y-2"}>
-            <Label htmlFor={"payload"}>{t("create.clinical_payload")}</Label>
+            <Label htmlFor={"payload"}>{t("shared.clinical_payload")}</Label>
             <Textarea id={"payload"} className={"min-h-64 font-mono text-xs"} value={payload} onChange={(event) => setPayload(event.target.value)} />
         </div>
         {Object.values(errors).map((error) => <p key={String(error)} className={"text-sm text-destructive"}>{String(error)}</p>)}

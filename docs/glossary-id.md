@@ -31,3 +31,6 @@ Preferred Indonesian wording for the ClinicalDocumentation UI. `provisional` ter
 | Continuing usefulness | Masih berguna | — | provisional | — |
 | Patient last visit | Kunjungan terakhir pasien | — | provisional | — |
 | Attendance coverage | Cakupan kunjungan | — | provisional | — |
+| Basis state: established | Ditetapkan | — | provisional | — |
+| Basis state: unreconciled | Belum direkonsiliasi | — | provisional | — |
+| Basis state: emergency affirmed | Ditegaskan dalam keadaan darurat | — | provisional | — |

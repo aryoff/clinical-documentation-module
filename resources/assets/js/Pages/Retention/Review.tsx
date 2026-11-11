@@ -56,7 +56,7 @@ const DestroyForm = ({ patientId }: { patientId: string }) => {
       }}
     >
       <p>{t("destruction.review_hint")}</p>
-      <Label htmlFor={"destroy-reason"}>{t("destruction.reason")}</Label>
+      <Label htmlFor={"destroy-reason"}>{t("shared.reason")}</Label>
       <Input id={"destroy-reason"} value={form.data.reason} onChange={(e) => form.setData("reason", e.target.value)} />
       {errors.reason && <p className={"text-sm text-destructive"}>{errors.reason}</p>}
       <label className={"flex items-center gap-1 text-sm"}>

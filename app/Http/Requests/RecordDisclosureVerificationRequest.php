@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\ClinicalDocumentation\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\ClinicalDocumentation\Services\DisclosureAuthorization;
 
 /** A plain FormRequest: Inertia form submissions break on an AJAX-aware one. */
-class RecordDisclosureVerificationRequest extends FormRequest
+class RecordDisclosureVerificationRequest extends ClinicalFormRequest
 {
     public function authorize(): bool
     {

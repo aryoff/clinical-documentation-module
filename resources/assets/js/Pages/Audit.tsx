@@ -62,7 +62,7 @@ const Audit = ({ events }: Pick<AuditProps, "events">) => {
                             <TableHead>{t("audit.occurred")}</TableHead>
                             <TableHead>{t("audit.action")}</TableHead>
                             <TableHead>{t("audit.actor")}</TableHead>
-                            <TableHead>{t("audit.reason")}</TableHead>
+                            <TableHead>{t("shared.reason")}</TableHead>
                             <TableHead>{t("audit.document")}</TableHead>
                         </TableRow>
                     </TableHeader>

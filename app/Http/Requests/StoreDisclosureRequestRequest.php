@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\ClinicalDocumentation\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
 /** A plain FormRequest: Inertia form submissions break on an AJAX-aware one. */
-class StoreDisclosureRequestRequest extends FormRequest
+class StoreDisclosureRequestRequest extends ClinicalFormRequest
 {
     public function authorize(): bool
     {

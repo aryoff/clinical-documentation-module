@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\ClinicalDocumentation\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
@@ -14,7 +13,7 @@ use Illuminate\Validation\Rule;
  * PopulateModuleMenuAndZiggyController strips the route — and with it the Show
  * page's diagnosis form — for an account that cannot author.
  */
-class AssertDiagnosisRequest extends FormRequest
+class AssertDiagnosisRequest extends ClinicalFormRequest
 {
     public function authorize(): bool
     {

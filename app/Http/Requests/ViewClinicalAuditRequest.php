@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\ClinicalDocumentation\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
 /**
  * The audit trail is the module's one menu-visible reviewer screen, so it gates
  * in authorize() rather than in route middleware: PopulateModuleMenuAndZiggyController
  * consults FormRequest::authorize() to decide what the sidebar may offer, and a
  * middleware-only gate would leave the entry visible and answer it with a 403.
  */
-class ViewClinicalAuditRequest extends FormRequest
+class ViewClinicalAuditRequest extends ClinicalFormRequest
 {
     public function authorize(): bool
     {
