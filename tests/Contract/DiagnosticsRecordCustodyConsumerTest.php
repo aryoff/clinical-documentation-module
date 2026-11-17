@@ -106,6 +106,22 @@ class DiagnosticsRecordCustodyConsumerTest extends TestCase
         }
     }
 
+    public function test_an_item_that_is_not_typed_identified_and_stated_makes_the_inventory_incomplete_not_a_crash(): void
+    {
+        $this->provider(['complete' => true, 'blockers' => [], 'fingerprint' => 'f', 'items' => [
+            ['custodian' => 'laboratory', 'ref_type' => 'draft_findings', 'ref_id' => 'line-1', 'state' => 'live'],
+            ['custodian' => 'laboratory', 'ref_id' => 'line-2', 'state' => 'live'],
+            'not an item',
+            ['custodian' => 'laboratory', 'ref_type' => 'draft_findings', 'ref_id' => 'line-3', 'state' => 'maybe'],
+        ]]);
+
+        $inventory = app(DestructionCustody::class)->inventory('patient-1');
+
+        $this->assertFalse($inventory['complete']);
+        $this->assertSame([['custodian' => 'laboratory', 'ref_type' => 'draft_findings', 'ref_id' => 'line-1', 'state' => 'live']], $inventory['items']);
+        $this->assertContains('custody_malformed', array_column($inventory['blockers'], 'reason'));
+    }
+
     public function test_a_specialtys_copies_are_followed_to_this_modules_own_projection_by_result_reference(): void
     {
         $reference = (string) \Illuminate\Support\Str::uuid();

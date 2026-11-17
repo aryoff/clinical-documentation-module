@@ -52,6 +52,13 @@ final class DestructionCustody
             $inventory = null;
         }
         foreach (($inventory['items'] ?? []) as $item) {
+            // A copy that is not typed, identified and stated cannot be destroyed or trusted as absent: the whole answer is then not complete.
+            if (! is_array($item) || ! is_string($item['custodian'] ?? null) || ! is_string($item['ref_type'] ?? null) || ! is_string($item['ref_id'] ?? null) || ! in_array($item['state'] ?? null, ['live', 'destroyed'], true)) {
+                $complete = false;
+                $blockers[] = ['custodian' => 'diagnostics', 'reason' => 'custody_malformed'];
+
+                continue;
+            }
             $items[] = ['custodian' => (string) $item['custodian'], 'ref_type' => (string) $item['ref_type'], 'ref_id' => (string) $item['ref_id'], 'state' => (string) $item['state']];
             if (isset($item['result_reference_id'])) {
                 $resultRefs[(string) $item['custodian']][] = (string) $item['result_reference_id'];
