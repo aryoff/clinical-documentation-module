@@ -454,6 +454,67 @@ class ClinicalRecordDestructionTest extends TestCase
         $this->assertSame('partial', $this->recordStatus());
     }
 
+    public function test_a_custodian_that_fails_when_asked_is_an_explicit_blocker_not_an_error(): void
+    {
+        $this->app->instance(\Modules\Diagnostics\Contracts\RecordCustodyContract::class, new class implements \Modules\Diagnostics\Contracts\RecordCustodyContract
+        {
+            public function inventory(string $patientId): array
+            {
+                throw new \RuntimeException('custody is down');
+            }
+
+            public function destroy(array $step): array
+            {
+                throw new \RuntimeException('custody is down');
+            }
+        });
+
+        $this->destroy()->assertSessionHasErrors('patient_id');
+
+        $this->assertNotNull(LabResult::findOrFail($this->walk['result']->id)->values);
+        $this->assertSame(0, DB::table('cd_destructions')->count());
+    }
+
+    public function test_custody_that_stops_being_complete_after_the_last_step_keeps_the_destruction_open(): void
+    {
+        $real = app(\Modules\Diagnostics\Contracts\RecordCustodyContract::class);
+        $this->app->instance(\Modules\Diagnostics\Contracts\RecordCustodyContract::class, new class($real) implements \Modules\Diagnostics\Contracts\RecordCustodyContract
+        {
+            private int $total = 0;
+
+            private int $calls = 0;
+
+            public function __construct(private readonly \Modules\Diagnostics\Contracts\RecordCustodyContract $real) {}
+
+            public function inventory(string $patientId): array
+            {
+                $inventory = $this->real->inventory($patientId);
+                if ($this->calls === 0 && $this->total === 0) {
+                    $this->total = count(array_filter($inventory['items'], fn (array $item): bool => $item['state'] === 'live'));
+                }
+                // After the last step a specialty can no longer be asked: the custodian cannot say all it holds.
+                if ($this->calls >= $this->total && $this->total > 0) {
+                    $inventory['complete'] = false;
+                    $inventory['blockers'] = [['custodian' => 'laboratory', 'reason' => 'custody_unreachable']];
+                }
+
+                return $inventory;
+            }
+
+            public function destroy(array $step): array
+            {
+                $this->calls++;
+
+                return $this->real->destroy($step);
+            }
+        });
+
+        $this->destroy();
+
+        $this->assertNull(DB::table('cd_destructions')->first()->completed_at, 'it is not completed while custody cannot say everything');
+        $this->assertSame('partial', $this->recordStatus());
+    }
+
     public function test_evidence_whose_copies_were_all_destroyed_still_shows_a_specialty_history_a_missing_custodian_cannot_answer_for(): void
     {
         // Every copy held here was emptied by an earlier destruction, and the custodian that held the rest has since gone.

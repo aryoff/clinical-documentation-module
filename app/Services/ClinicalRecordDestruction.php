@@ -145,12 +145,14 @@ final class ClinicalRecordDestruction
             }
         }
         $destruction->refresh();
-        // Complete only when nothing is left to do AND nothing new has appeared since the last step: a copy discovered after it keeps the
-        // destruction open, for the person to take in by doing the action again, rather than being completed over.
-        if ($destruction->completed_at === null
-            && ! $destruction->items()->where('status', '!=', 'destroyed')->exists()
-            && ! $this->discovered($destruction, $this->custody->inventory($destruction->patient_id)['items'])) {
-            $destruction->update(['completed_at' => CarbonImmutable::now()]);
+        // Complete only when nothing is left to do AND nothing new has appeared since the last step AND the custodian can still say everything it
+        // holds: a copy discovered after it, or custody that stopped being complete, keeps the destruction open (a truthful partial), for the
+        // person to take in by doing the action again, rather than being completed over.
+        if ($destruction->completed_at === null && ! $destruction->items()->where('status', '!=', 'destroyed')->exists()) {
+            $custody = $this->custody->inventory($destruction->patient_id);
+            if ($custody['complete'] && ! $this->discovered($destruction, $custody['items'])) {
+                $destruction->update(['completed_at' => CarbonImmutable::now()]);
+            }
         }
 
         return $destruction->refresh();

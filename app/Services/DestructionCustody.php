@@ -46,7 +46,15 @@ final class DestructionCustody
         $complete = true;
         $blockers = [];
 
-        $inventory = $this->gateway->callIfAvailable(self::CAPABILITY, 'inventory', [$patientId]);
+        try {
+            $inventory = $this->gateway->callIfAvailable(self::CAPABILITY, 'inventory', [$patientId]);
+        } catch (\Throwable $failure) {
+            // A custodian that is composed but cannot be reached or answers with a failure has not said it holds nothing: it is an explicit blocker.
+            report($failure);
+            $complete = false;
+            $blockers[] = ['custodian' => 'diagnostics', 'reason' => 'custody_unreachable'];
+            $inventory = null;
+        }
         if ($inventory !== null && (! is_array($inventory) || ! is_array($inventory['items'] ?? null) || ! array_is_list($inventory['items']) || ! is_bool($inventory['complete'] ?? null))) {
             $complete = false;
             $blockers[] = ['custodian' => 'diagnostics', 'reason' => 'custody_malformed'];
