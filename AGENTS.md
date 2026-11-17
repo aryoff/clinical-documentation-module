@@ -57,7 +57,7 @@ Last Visit, and custodians (Laboratory and others) execute destruction steps whe
 - **Destruction** (`ClinicalRecordDestruction`, clinical-documentation-module#8, decision record root #488): the mandatory duty is to keep records
   at least 25 years from the last visit (Permenkes 24/2022 Pasal 39(1); PP 28/2024 Pasal 974(3)); destruction afterwards is optional. It is **one
   authorized action** (`retention.destroy`) that acknowledges no retained clinical record still needs the content, covers every copy across
-  custodians (Laboratory by capability ID, plus this module's own Diagnostic Result Evidence found by `result_reference_id`) and runs them one by one.
+  custodians (the diagnostic custodian by capability ID `diagnostics.record-custody`, which answers for itself and every specialty registered with it, plus this module's own Diagnostic Result Evidence found by `result_reference_id`) and runs them one by one. A custodian that is not composed while this module holds evidence from a specialty (`custody_unavailable`), or that answers but cannot say everything (`custody_incomplete`: a specialty it cannot ask, that offers no custody or is no longer composed), blocks the destruction: unavailable is never an empty inventory.
   Every custodian asks `clinicaldocumentation.destruction-authorization` before each irreversible step; `problem()` re-checks the review, the
   dependencies and discovered copies under a per-patient lock that hold and extension writes also take. A hold, a later visit or a discovered copy
   stops the rest; what was destroyed stays destroyed and the rest can be resumed (by the worker, or by doing the action again, which finishes the open

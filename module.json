@@ -112,11 +112,11 @@
                 "consumerContractTest": "tests/Contract/EmergencyAccessReviewConsumerTest.php"
             },
             {
-                "id": "laboratory.record-custody",
+                "id": "diagnostics.record-custody",
                 "version": "^1.0",
                 "mode": "sync",
                 "required": false,
-                "consumerContractTest": "tests/Contract/LaboratoryRecordCustodyConsumerTest.php"
+                "consumerContractTest": "tests/Contract/DiagnosticsRecordCustodyConsumerTest.php"
             },
             {
                 "id": "hospitalcore.patient-last-visit",

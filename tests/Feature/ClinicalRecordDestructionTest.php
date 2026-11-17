@@ -354,6 +354,30 @@ class ClinicalRecordDestructionTest extends TestCase
     }
 
     /** A Laboratory custodian that fails, loses its reply, or has a side effect after the Nth destroy call. */
+    public function test_a_custodian_that_cannot_say_everything_it_holds_stops_the_destruction_instead_of_reading_as_nothing_more(): void
+    {
+        $real = app(\Modules\Diagnostics\Contracts\RecordCustodyContract::class);
+        $this->app->instance(\Modules\Diagnostics\Contracts\RecordCustodyContract::class, new class($real) implements \Modules\Diagnostics\Contracts\RecordCustodyContract
+        {
+            public function __construct(private readonly \Modules\Diagnostics\Contracts\RecordCustodyContract $real) {}
+
+            public function inventory(string $patientId): array
+            {
+                return ['complete' => false, 'blockers' => [['custodian' => 'radiology', 'reason' => 'specialty_not_registered']]] + $this->real->inventory($patientId);
+            }
+
+            public function destroy(array $step): array
+            {
+                return $this->real->destroy($step);
+            }
+        });
+
+        $this->destroy()->assertSessionHasErrors('patient_id');
+
+        $this->assertNotNull(LabResult::findOrFail($this->walk['result']->id)->values);
+        $this->assertSame(0, DB::table('cd_destructions')->count());
+    }
+
     private function flakyCustodian(?int $failOnCall = null, ?int $loseReplyOnCall = null, ?int $afterCall = null, ?\Closure $then = null): object
     {
         $real = app(RecordCustodyContract::class);

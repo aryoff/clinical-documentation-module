@@ -184,8 +184,9 @@ final class ClinicalRecordDestruction
     private function assess(string $patientId): array
     {
         $blockers = $this->review->assess($patientId)['blockers'];
-        $items = array_values(array_filter($this->custody->inventory($patientId), fn (array $item): bool => $item['state'] === 'live'));
-        array_push($blockers, ...$this->dependencyBlockers($patientId, array_column($items, 'ref_id')));
+        $custody = $this->custody->inventory($patientId);
+        $items = array_values(array_filter($custody['items'], fn (array $item): bool => $item['state'] === 'live'));
+        array_push($blockers, ...$this->dependencyBlockers($patientId, array_column($items, 'ref_id'), $custody['complete']));
         if ($items === []) {
             $blockers[] = 'nothing_to_destroy';
         }
@@ -197,9 +198,10 @@ final class ClinicalRecordDestruction
      * What a retained record or an unproven vault copy still holds, or an owner that cannot be asked at all.
      *
      * @param  list<string>  $itemRefs
+     * @param  bool  $custodyComplete  whether the diagnostic custodian, when composed, could say everything it holds
      * @return list<string>
      */
-    private function dependencyBlockers(string $patientId, array $itemRefs): array
+    private function dependencyBlockers(string $patientId, array $itemRefs, bool $custodyComplete = true): array
     {
         $blockers = [];
         if ($this->citedEvidence($patientId, $itemRefs) !== []) {
@@ -208,9 +210,13 @@ final class ClinicalRecordDestruction
         if (ClinicalArchivePackage::query()->where('patient_id', $patientId)->exists()) {
             $blockers[] = 'vault_custody_unproven';
         }
-        // Copies of Laboratory's findings exist here but the owner cannot be asked what else it holds: not "nothing".
-        if (! $this->custody->laboratoryAvailable() && DiagnosticResultEvidence::query()->where('patient_id', $patientId)->where('source_owner', 'laboratory')->whereNull('destroyed_at')->exists()) {
+        // Copies of a specialty's findings exist here but its custodian cannot be asked what else it holds: not "nothing".
+        if (! $this->custody->available() && DiagnosticResultEvidence::query()->where('patient_id', $patientId)->whereNull('destroyed_at')->exists()) {
             $blockers[] = 'custody_unavailable';
+        }
+        // The custodian answered but could not say all of it (a specialty it cannot ask, offers no custody or no longer has): not "nothing" either.
+        if (! $custodyComplete) {
+            $blockers[] = 'custody_incomplete';
         }
 
         return $blockers;
@@ -231,7 +237,7 @@ final class ClinicalRecordDestruction
     private function discovered(Destruction $destruction): bool
     {
         $named = $destruction->items()->get()->map(fn (DestructionItem $i): string => $i->custodian.'|'.$i->ref_type.'|'.$i->ref_id)->all();
-        foreach ($this->custody->inventory($destruction->patient_id) as $held) {
+        foreach ($this->custody->inventory($destruction->patient_id)['items'] as $held) {
             // A copy already destroyed (by this or an earlier destruction) is not new; only a live one the person did not see is.
             if ($held['state'] === 'live' && ! in_array($held['custodian'].'|'.$held['ref_type'].'|'.$held['ref_id'], $named, true)) {
                 return true;
