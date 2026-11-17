@@ -97,7 +97,8 @@ class DiagnosticsRecordCustodyConsumerTest extends TestCase
 
     public function test_an_answer_that_is_not_in_the_documented_shape_is_incomplete_never_empty(): void
     {
-        foreach ([['items' => []], ['complete' => true], ['complete' => 'yes', 'items' => []], ['complete' => true, 'items' => 'none']] as $answer) {
+        $valid = ['custodian' => 'laboratory', 'ref_type' => 'draft_findings', 'ref_id' => 'line-1', 'state' => 'live'];
+        foreach ([['items' => []], ['complete' => true], ['complete' => 'yes', 'items' => []], ['complete' => true, 'items' => 'none'], ['complete' => true, 'items' => ['first' => $valid]]] as $answer) {
             $this->provider($answer);
 
             $inventory = app(DestructionCustody::class)->inventory('patient-1');

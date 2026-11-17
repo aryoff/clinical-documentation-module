@@ -401,6 +401,19 @@ class ClinicalRecordDestructionTest extends TestCase
         $this->assertSame(0, DB::table('cd_destruction_items')->whereNull('receipt_id')->count(), 'every copy keeps its receipt, the one that was taken in again too');
     }
 
+    public function test_a_custodian_that_is_not_composed_while_this_module_holds_a_specialtys_evidence_blocks_the_destruction(): void
+    {
+        // The diagnostic custodian is gone (its module disabled), but the findings it projected are still held here.
+        unset($this->app[\Modules\Diagnostics\Contracts\RecordCustodyContract::class]);
+        $this->assertFalse(app(\Modules\ClinicalDocumentation\Services\DestructionCustody::class)->available());
+
+        $this->destroy()->assertSessionHasErrors('patient_id');
+
+        $this->assertNotNull(LabResult::findOrFail($this->walk['result']->id)->values);
+        $this->assertNotNull(DiagnosticResultEvidence::where('patient_id', $this->patientId)->firstOrFail()->summary);
+        $this->assertSame(0, DB::table('cd_destructions')->count());
+    }
+
     public function test_a_custodian_that_cannot_say_everything_it_holds_stops_the_destruction_instead_of_reading_as_nothing_more(): void
     {
         $real = app(\Modules\Diagnostics\Contracts\RecordCustodyContract::class);

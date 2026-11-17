@@ -32,9 +32,10 @@ final class DestructionCustody
     /**
      * What is held for the patient, and whether the custodian could say all of it.
      *
-     * Every copy is listed, destroyed ones included, as custodian / type / id / state. `complete` is false when the diagnostic custodian is
-     * not composed, did not answer in the documented shape, or reports a specialty it could not ask or no longer has: that is incomplete
-     * custody, never an empty one.
+     * Every copy is listed, destroyed ones included, as custodian / type / id / state. `complete` is false when the diagnostic custodian did
+     * not answer in the documented shape, has an item it cannot vouch for, or reports a specialty it could not ask or no longer has: that is
+     * incomplete custody, never an empty one. A custodian that is not composed at all has nothing to answer: whether that matters is the caller's
+     * to say (`available()`), since a deployment that never had one holds nothing for it, whereas one that holds a specialty's evidence here does.
      *
      * @return array{items: list<array{custodian: string, ref_type: string, ref_id: string, state: string}>, complete: bool, blockers: list<array{custodian: string, reason: string}>}
      */
@@ -46,7 +47,7 @@ final class DestructionCustody
         $blockers = [];
 
         $inventory = $this->gateway->callIfAvailable(self::CAPABILITY, 'inventory', [$patientId]);
-        if ($inventory !== null && (! is_array($inventory) || ! is_array($inventory['items'] ?? null) || ! is_bool($inventory['complete'] ?? null))) {
+        if ($inventory !== null && (! is_array($inventory) || ! is_array($inventory['items'] ?? null) || ! array_is_list($inventory['items']) || ! is_bool($inventory['complete'] ?? null))) {
             $complete = false;
             $blockers[] = ['custodian' => 'diagnostics', 'reason' => 'custody_malformed'];
             $inventory = null;
