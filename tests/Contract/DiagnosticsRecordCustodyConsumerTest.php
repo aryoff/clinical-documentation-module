@@ -157,6 +157,23 @@ class DiagnosticsRecordCustodyConsumerTest extends TestCase
         $this->assertSame(['receipt_id' => 'r-laboratory-line-1'], $receipt);
     }
 
+    public function test_a_custodian_that_is_not_composed_has_nothing_to_answer_and_is_not_asked_a_step(): void
+    {
+        $bindings = app(CapabilityRegistry::class)->providerBindings(self::CAPABILITY);
+        if ($bindings === []) {
+            $this->markTestSkipped('Diagnostics is not part of this composition.');
+        }
+        // Its module is disabled: the capability still names a binding, but nothing is booted behind it.
+        foreach ($bindings as $binding) {
+            unset($this->app[$binding]);
+        }
+
+        $inventory = app(DestructionCustody::class)->inventory((string) \Illuminate\Support\Str::uuid());
+
+        $this->assertFalse(app(DestructionCustody::class)->available());
+        $this->assertSame([[], [], true], [$inventory['items'], $inventory['blockers'], $inventory['complete']], 'a deployment that never had one holds nothing for it; whether that matters is available()');
+    }
+
     public function test_without_a_provider_no_receipt_is_invented_and_nothing_reads_as_held_nothing(): void
     {
         if (app(CapabilityRegistry::class)->providerBindings(self::CAPABILITY) !== []) {
