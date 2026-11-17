@@ -414,6 +414,18 @@ class ClinicalRecordDestructionTest extends TestCase
         $this->assertSame(0, DB::table('cd_destructions')->count());
     }
 
+    public function test_evidence_whose_copies_were_all_destroyed_still_shows_a_specialty_history_a_missing_custodian_cannot_answer_for(): void
+    {
+        // Every copy held here was emptied by an earlier destruction, and the custodian that held the rest has since gone.
+        DiagnosticResultEvidence::query()->where('patient_id', $this->patientId)->update(['destroyed_at' => now(), 'summary' => null]);
+        unset($this->app[\Modules\Diagnostics\Contracts\RecordCustodyContract::class]);
+
+        $blockers = (new \ReflectionMethod(\Modules\ClinicalDocumentation\Services\ClinicalRecordDestruction::class, 'dependencyBlockers'))
+            ->invoke(app(\Modules\ClinicalDocumentation\Services\ClinicalRecordDestruction::class), $this->patientId, [], true, []);
+
+        $this->assertContains('custody_unavailable', $blockers);
+    }
+
     public function test_a_custodian_that_cannot_say_everything_it_holds_stops_the_destruction_instead_of_reading_as_nothing_more(): void
     {
         $real = app(\Modules\Diagnostics\Contracts\RecordCustodyContract::class);

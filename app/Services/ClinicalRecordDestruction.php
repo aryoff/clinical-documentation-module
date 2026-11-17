@@ -223,8 +223,9 @@ final class ClinicalRecordDestruction
         if (ClinicalArchivePackage::query()->where('patient_id', $patientId)->exists()) {
             $blockers[] = 'vault_custody_unproven';
         }
-        // Copies of a specialty's findings exist here but its custodian cannot be asked what else it holds: not "nothing".
-        if (! $this->custody->available() && DiagnosticResultEvidence::query()->where('patient_id', $patientId)->whereNull('destroyed_at')->exists()) {
+        // A specialty's findings were projected here (whether or not those copies were since destroyed) but its custodian cannot be asked what
+        // else it holds: that history is not "nothing".
+        if (! $this->custody->available() && DiagnosticResultEvidence::query()->where('patient_id', $patientId)->exists()) {
             $blockers[] = 'custody_unavailable';
         }
         // The custodian answered but could not say all of it (a specialty it cannot ask, offers no custody or no longer has): not "nothing" either.
