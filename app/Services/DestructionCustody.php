@@ -55,7 +55,8 @@ final class DestructionCustody
         foreach (($inventory['items'] ?? []) as $item) {
             // A copy that is not typed, identified and stated cannot be destroyed or trusted as absent: the whole answer is then not complete.
             // A result version also names the stable reference its projection here is found by; without it that copy could be missed.
-            if (! is_array($item) || ! is_string($item['custodian'] ?? null) || ! is_string($item['ref_type'] ?? null) || ! is_string($item['ref_id'] ?? null) || ! in_array($item['state'] ?? null, ['live', 'destroyed'], true)
+            if (! is_array($item) || ($item['custodian'] ?? '') === '' || ($item['ref_type'] ?? '') === '' || ($item['ref_id'] ?? '') === ''
+                || ! is_string($item['custodian'] ?? null) || ! is_string($item['ref_type'] ?? null) || ! is_string($item['ref_id'] ?? null) || ! in_array($item['state'] ?? null, ['live', 'destroyed'], true)
                 || ($item['ref_type'] === 'result_version' && (! is_string($item['result_reference_id'] ?? null) || $item['result_reference_id'] === ''))) {
                 $complete = false;
                 $blockers[] = ['custodian' => 'diagnostics', 'reason' => 'custody_malformed'];

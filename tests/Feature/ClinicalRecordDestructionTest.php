@@ -414,6 +414,46 @@ class ClinicalRecordDestructionTest extends TestCase
         $this->assertSame(0, DB::table('cd_destructions')->count());
     }
 
+    public function test_a_copy_that_appears_after_the_last_step_keeps_the_destruction_open_instead_of_completing_over_it(): void
+    {
+        $real = app(\Modules\Diagnostics\Contracts\RecordCustodyContract::class);
+        $this->app->instance(\Modules\Diagnostics\Contracts\RecordCustodyContract::class, new class($real) implements \Modules\Diagnostics\Contracts\RecordCustodyContract
+        {
+            private int $total = 0;
+
+            private int $calls = 0;
+
+            public function __construct(private readonly \Modules\Diagnostics\Contracts\RecordCustodyContract $real) {}
+
+            public function inventory(string $patientId): array
+            {
+                $inventory = $this->real->inventory($patientId);
+                // How many steps this custodian will be asked, read from what it holds live before anything ran.
+                if ($this->calls === 0 && $this->total === 0) {
+                    $this->total = count(array_filter($inventory['items'], fn (array $item): bool => $item['state'] === 'live'));
+                }
+                // After the last of them, a copy nobody saw appears.
+                if ($this->calls >= $this->total && $this->total > 0) {
+                    $inventory['items'][] = ['custodian' => 'laboratory', 'ref_type' => 'draft_findings', 'ref_id' => 'appeared-after-the-last-step', 'state' => 'live'];
+                }
+
+                return $inventory;
+            }
+
+            public function destroy(array $step): array
+            {
+                $this->calls++;
+
+                return $this->real->destroy($step);
+            }
+        });
+
+        $this->destroy();
+
+        $this->assertNull(DB::table('cd_destructions')->first()->completed_at, 'it is not completed over a copy it never named');
+        $this->assertSame('partial', $this->recordStatus());
+    }
+
     public function test_evidence_whose_copies_were_all_destroyed_still_shows_a_specialty_history_a_missing_custodian_cannot_answer_for(): void
     {
         // Every copy held here was emptied by an earlier destruction, and the custodian that held the rest has since gone.
