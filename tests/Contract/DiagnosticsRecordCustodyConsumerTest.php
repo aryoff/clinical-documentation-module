@@ -37,7 +37,8 @@ class DiagnosticsRecordCustodyConsumerTest extends TestCase
 
     public function test_availability_follows_whether_a_provider_is_composed(): void
     {
-        $composed = app(CapabilityRegistry::class)->providerBindings(self::CAPABILITY) !== [];
+        // Composed means a provider that is installed and booted: a module that is on disk but disabled is not one.
+        $composed = collect(app(CapabilityRegistry::class)->providerBindings(self::CAPABILITY))->contains(fn (string $binding): bool => $this->app->bound($binding));
 
         $this->assertSame($composed, app(DestructionCustody::class)->available());
     }
@@ -126,17 +127,24 @@ class DiagnosticsRecordCustodyConsumerTest extends TestCase
     public function test_a_specialtys_copies_are_followed_to_this_modules_own_projection_by_result_reference(): void
     {
         $reference = (string) \Illuminate\Support\Str::uuid();
+        $patient = (string) \Illuminate\Support\Str::uuid();
         $this->provider(['complete' => true, 'blockers' => [], 'fingerprint' => 'f', 'items' => [
             ['custodian' => 'laboratory', 'ref_type' => 'result_version', 'ref_id' => 'v-1', 'state' => 'live', 'result_reference_id' => $reference, 'version' => 1],
         ]]);
         $evidence = DiagnosticResultEvidence::query()->create([
-            'patient_id' => (string) \Illuminate\Support\Str::uuid(), 'registration_id' => (string) \Illuminate\Support\Str::uuid(), 'source_owner' => 'laboratory',
+            'patient_id' => $patient, 'registration_id' => (string) \Illuminate\Support\Str::uuid(), 'source_owner' => 'laboratory',
             'result_reference_id' => $reference, 'coding_system' => 'x', 'code' => 'K', 'display' => 'Potassium', 'summary' => '7.1', 'observed_at' => now(), 'released_by' => (string) \Illuminate\Support\Str::uuid(), 'released_by_name' => 'Releaser',
         ]);
 
-        $items = app(DestructionCustody::class)->inventory('patient-1')['items'];
+        DiagnosticResultEvidence::query()->create([
+            'patient_id' => (string) \Illuminate\Support\Str::uuid(), 'registration_id' => (string) \Illuminate\Support\Str::uuid(), 'source_owner' => 'laboratory',
+            'result_reference_id' => $reference, 'coding_system' => 'x', 'code' => 'K', 'display' => 'Potassium', 'summary' => '9.9', 'observed_at' => now(), 'released_by' => (string) \Illuminate\Support\Str::uuid(), 'released_by_name' => 'Releaser',
+        ]);
+
+        $items = app(DestructionCustody::class)->inventory($patient)['items'];
 
         $this->assertContains(['custodian' => 'clinicaldocumentation', 'ref_type' => 'diagnostic_result_evidence', 'ref_id' => $evidence->id, 'state' => 'live'], $items);
+        $this->assertCount(1, array_filter($items, fn (array $i): bool => $i['custodian'] === 'clinicaldocumentation'), 'another patient\'s copy of the same reference is not this patient\'s');
     }
 
     public function test_a_step_goes_to_the_custodian_named_with_its_custodian_and_returns_its_receipt(): void

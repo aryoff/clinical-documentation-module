@@ -72,7 +72,7 @@ final class DestructionCustody
         }
         // Found by the stable source reference, never by a pointer stored on the source side; the specialty's service kind is the evidence's owner.
         foreach ($resultRefs as $owner => $refs) {
-            foreach (DiagnosticResultEvidence::query()->where('source_owner', $owner)->whereIn('result_reference_id', $refs)->orderBy('id')->get() as $evidence) {
+            foreach (DiagnosticResultEvidence::query()->where('patient_id', $patientId)->where('source_owner', $owner)->whereIn('result_reference_id', $refs)->orderBy('id')->get() as $evidence) {
                 $items[] = ['custodian' => self::OWN, 'ref_type' => self::OWN_EVIDENCE, 'ref_id' => $evidence->id, 'state' => $evidence->destroyed_at === null ? 'live' : 'destroyed'];
             }
         }
@@ -98,7 +98,8 @@ final class DestructionCustody
             return ['receipt_id' => $receipt['receipt_id']];
         }
 
-        $evidence = DiagnosticResultEvidence::query()->findOrFail($step['ref_id']);
+        // Whose copy is this? Checked before anything, so a step cannot name another patient's evidence.
+        $evidence = DiagnosticResultEvidence::query()->where('patient_id', $step['patient_id'])->findOrFail($step['ref_id']);
         if ($evidence->destroyed_at === null) {
             RetentionDestruction::run(fn () => $evidence->update(['summary' => null, 'destroyed_at' => now()]));
         }
