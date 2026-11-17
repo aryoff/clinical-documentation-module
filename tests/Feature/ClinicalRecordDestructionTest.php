@@ -398,6 +398,7 @@ class ClinicalRecordDestructionTest extends TestCase
         $this->destroy()->assertRedirect();
         $this->assertSame('complete', $this->recordStatus());
         $this->assertSame(0, DB::table('cd_destruction_items')->where('status', '!=', 'destroyed')->count());
+        $this->assertSame(0, DB::table('cd_destruction_items')->whereNull('receipt_id')->count(), 'every copy keeps its receipt, the one that was taken in again too');
     }
 
     public function test_a_custodian_that_cannot_say_everything_it_holds_stops_the_destruction_instead_of_reading_as_nothing_more(): void

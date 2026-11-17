@@ -58,7 +58,9 @@ final class ClinicalRecordDestruction
                     DestructionItem::create(['destruction_id' => $open->id] + array_intersect_key($item, array_flip(['custodian', 'ref_type', 'ref_id'])));
                 } elseif ($existing->status === 'destroyed') {
                     // A copy this destruction emptied that holds content again (it is listed live): that is new content, taken in as a step to run again.
-                    $existing->update(['status' => 'pending', 'receipt_id' => null, 'failure' => null, 'destroyed_at' => null]);
+                    // Its receipt and the time of the earlier removal stay on the record (the same authorization gets the same receipt back); the time
+                    // moves only when the step has run.
+                    $existing->update(['status' => 'pending', 'failure' => null]);
                 }
             }
 
