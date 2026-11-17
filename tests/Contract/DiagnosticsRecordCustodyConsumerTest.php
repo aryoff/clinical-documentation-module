@@ -113,6 +113,7 @@ class DiagnosticsRecordCustodyConsumerTest extends TestCase
             ['custodian' => 'laboratory', 'ref_id' => 'line-2', 'state' => 'live'],
             'not an item',
             ['custodian' => 'laboratory', 'ref_type' => 'draft_findings', 'ref_id' => 'line-3', 'state' => 'maybe'],
+            ['custodian' => 'laboratory', 'ref_type' => 'result_version', 'ref_id' => 'v-4', 'state' => 'live'],
         ]]);
 
         $inventory = app(DestructionCustody::class)->inventory('patient-1');

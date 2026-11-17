@@ -111,13 +111,19 @@ final class ClinicalRecordDestruction
      */
     public function problem(Destruction $destruction): ?string
     {
-        return match (true) {
-            ! $this->enablement->enabled() => 'destruction_not_enabled',
-            $this->review->assess($destruction->patient_id)['blockers'] !== [] => 'protection_changed',
-            $this->dependencyBlockers($destruction->patient_id, $destruction->items()->pluck('ref_id')->all()) !== [] => 'dependency_changed',
-            $this->discovered($destruction) => 'copy_discovered',
-            default => null,
-        };
+        if (! $this->enablement->enabled()) {
+            return 'destruction_not_enabled';
+        }
+        if ($this->review->assess($destruction->patient_id)['blockers'] !== []) {
+            return 'protection_changed';
+        }
+        // The custodian is asked once per check, and what it could not say is a change too: a specialty that stopped being asked mid-way is not "nothing more".
+        $custody = $this->custody->inventory($destruction->patient_id);
+        if ($this->dependencyBlockers($destruction->patient_id, $destruction->items()->pluck('ref_id')->all(), $custody['complete'], array_column($custody['blockers'], 'reason')) !== []) {
+            return 'dependency_changed';
+        }
+
+        return $this->discovered($destruction, $custody['items']) ? 'copy_discovered' : null;
     }
 
     private function run(Destruction $destruction): Destruction
@@ -186,7 +192,7 @@ final class ClinicalRecordDestruction
         $blockers = $this->review->assess($patientId)['blockers'];
         $custody = $this->custody->inventory($patientId);
         $items = array_values(array_filter($custody['items'], fn (array $item): bool => $item['state'] === 'live'));
-        array_push($blockers, ...$this->dependencyBlockers($patientId, array_column($items, 'ref_id'), $custody['complete']));
+        array_push($blockers, ...$this->dependencyBlockers($patientId, array_column($items, 'ref_id'), $custody['complete'], array_column($custody['blockers'], 'reason')));
         if ($items === []) {
             $blockers[] = 'nothing_to_destroy';
         }
@@ -199,9 +205,10 @@ final class ClinicalRecordDestruction
      *
      * @param  list<string>  $itemRefs
      * @param  bool  $custodyComplete  whether the diagnostic custodian, when composed, could say everything it holds
+     * @param  list<string>  $custodyReasons  why it could not, as it said (a specialty not registered, offering no custody, unreachable or malformed)
      * @return list<string>
      */
-    private function dependencyBlockers(string $patientId, array $itemRefs, bool $custodyComplete = true): array
+    private function dependencyBlockers(string $patientId, array $itemRefs, bool $custodyComplete, array $custodyReasons): array
     {
         $blockers = [];
         if ($this->citedEvidence($patientId, $itemRefs) !== []) {
@@ -216,7 +223,7 @@ final class ClinicalRecordDestruction
         }
         // The custodian answered but could not say all of it (a specialty it cannot ask, offers no custody or no longer has): not "nothing" either.
         if (! $custodyComplete) {
-            $blockers[] = 'custody_incomplete';
+            array_push($blockers, 'custody_incomplete', ...array_values(array_unique($custodyReasons)));
         }
 
         return $blockers;
@@ -233,13 +240,21 @@ final class ClinicalRecordDestruction
         return array_values(array_unique($cited));
     }
 
-    /** Anything held for the patient that the person did not see when they acted: a discovered copy. */
-    private function discovered(Destruction $destruction): bool
+    /**
+     * Anything held for the patient that the person did not see when they acted: a discovered copy.
+     *
+     * @param  list<array{custodian: string, ref_type: string, ref_id: string, state: string}>  $inventory
+     */
+    private function discovered(Destruction $destruction, array $inventory): bool
     {
-        $named = $destruction->items()->get()->map(fn (DestructionItem $i): string => $i->custodian.'|'.$i->ref_type.'|'.$i->ref_id)->all();
-        foreach ($this->custody->inventory($destruction->patient_id)['items'] as $held) {
+        $items = $destruction->items()->get();
+        $named = $items->map(fn (DestructionItem $i): string => $i->custodian.'|'.$i->ref_type.'|'.$i->ref_id)->all();
+        // A copy this destruction already destroyed that holds content again was written to since: new content the person did not see.
+        $emptied = $items->where('status', 'destroyed')->map(fn (DestructionItem $i): string => $i->custodian.'|'.$i->ref_type.'|'.$i->ref_id)->all();
+        foreach ($inventory as $held) {
+            $key = $held['custodian'].'|'.$held['ref_type'].'|'.$held['ref_id'];
             // A copy already destroyed (by this or an earlier destruction) is not new; only a live one the person did not see is.
-            if ($held['state'] === 'live' && ! in_array($held['custodian'].'|'.$held['ref_type'].'|'.$held['ref_id'], $named, true)) {
+            if ($held['state'] === 'live' && (! in_array($key, $named, true) || in_array($key, $emptied, true))) {
                 return true;
             }
         }

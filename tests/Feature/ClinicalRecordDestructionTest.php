@@ -354,6 +354,40 @@ class ClinicalRecordDestructionTest extends TestCase
     }
 
     /** A Laboratory custodian that fails, loses its reply, or has a side effect after the Nth destroy call. */
+    public function test_content_written_to_a_copy_after_this_destruction_emptied_it_stops_the_rest_as_a_discovered_copy(): void
+    {
+        $real = app(\Modules\Diagnostics\Contracts\RecordCustodyContract::class);
+        $this->app->instance(\Modules\Diagnostics\Contracts\RecordCustodyContract::class, new class($real) implements \Modules\Diagnostics\Contracts\RecordCustodyContract
+        {
+            private bool $destroyed = false;
+
+            public function __construct(private readonly \Modules\Diagnostics\Contracts\RecordCustodyContract $real) {}
+
+            public function inventory(string $patientId): array
+            {
+                $inventory = $this->real->inventory($patientId);
+                // Once a step has run, the copy it emptied is written to again: it holds content, so it is live.
+                if ($this->destroyed) {
+                    $inventory['items'] = array_map(fn (array $item): array => ['state' => 'live'] + $item, $inventory['items']);
+                }
+
+                return $inventory;
+            }
+
+            public function destroy(array $step): array
+            {
+                $receipt = $this->real->destroy($step);
+                $this->destroyed = true;
+
+                return $receipt;
+            }
+        });
+
+        $this->destroy()->assertSessionHasErrors('destruction');
+
+        $this->assertSame('partial', $this->recordStatus());
+    }
+
     public function test_a_custodian_that_cannot_say_everything_it_holds_stops_the_destruction_instead_of_reading_as_nothing_more(): void
     {
         $real = app(\Modules\Diagnostics\Contracts\RecordCustodyContract::class);
