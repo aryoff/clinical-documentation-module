@@ -359,16 +359,18 @@ class ClinicalRecordDestructionTest extends TestCase
         $real = app(\Modules\Diagnostics\Contracts\RecordCustodyContract::class);
         $this->app->instance(\Modules\Diagnostics\Contracts\RecordCustodyContract::class, new class($real) implements \Modules\Diagnostics\Contracts\RecordCustodyContract
         {
-            private bool $destroyed = false;
+            private ?string $rewritten = null;
+
+            private int $calls = 0;
 
             public function __construct(private readonly \Modules\Diagnostics\Contracts\RecordCustodyContract $real) {}
 
             public function inventory(string $patientId): array
             {
                 $inventory = $this->real->inventory($patientId);
-                // Once a step has run, the copy it emptied is written to again: it holds content, so it is live.
-                if ($this->destroyed) {
-                    $inventory['items'] = array_map(fn (array $item): array => ['state' => 'live'] + $item, $inventory['items']);
+                // The copy the first step emptied is written to again: it holds content, so it is live until a step removes it again.
+                if ($this->rewritten !== null) {
+                    $inventory['items'] = array_map(fn (array $item): array => $item['custodian'].'|'.$item['ref_id'] === $this->rewritten ? ['state' => 'live'] + $item : $item, $inventory['items']);
                 }
 
                 return $inventory;
@@ -377,15 +379,25 @@ class ClinicalRecordDestructionTest extends TestCase
             public function destroy(array $step): array
             {
                 $receipt = $this->real->destroy($step);
-                $this->destroyed = true;
+                $key = $step['custodian'].'|'.$step['ref_id'];
+                if (++$this->calls === 1) {
+                    $this->rewritten = $key;
+                } elseif ($key === $this->rewritten) {
+                    $this->rewritten = null;
+                }
 
                 return $receipt;
             }
         });
 
+        // The first run stops at the copy that was written to after it was emptied...
         $this->destroy()->assertSessionHasErrors('destruction');
-
         $this->assertSame('partial', $this->recordStatus());
+
+        // ...and doing the action again takes it in and runs its step again, instead of refusing for ever or completing over live content.
+        $this->destroy()->assertRedirect();
+        $this->assertSame('complete', $this->recordStatus());
+        $this->assertSame(0, DB::table('cd_destruction_items')->where('status', '!=', 'destroyed')->count());
     }
 
     public function test_a_custodian_that_cannot_say_everything_it_holds_stops_the_destruction_instead_of_reading_as_nothing_more(): void

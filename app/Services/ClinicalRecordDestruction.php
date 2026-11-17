@@ -51,10 +51,14 @@ final class ClinicalRecordDestruction
             throw $this->refusal('patient_id', 'destruction_not_permitted');
         }
         if ($open !== null) {
-            $named = $open->items()->get()->map(fn (DestructionItem $i): string => $i->custodian.'|'.$i->ref_type.'|'.$i->ref_id)->all();
+            $held = $open->items()->get()->keyBy(fn (DestructionItem $i): string => $i->custodian.'|'.$i->ref_type.'|'.$i->ref_id);
             foreach ($items as $item) {
-                if (! in_array($item['custodian'].'|'.$item['ref_type'].'|'.$item['ref_id'], $named, true)) {
+                $existing = $held->get($item['custodian'].'|'.$item['ref_type'].'|'.$item['ref_id']);
+                if ($existing === null) {
                     DestructionItem::create(['destruction_id' => $open->id] + array_intersect_key($item, array_flip(['custodian', 'ref_type', 'ref_id'])));
+                } elseif ($existing->status === 'destroyed') {
+                    // A copy this destruction emptied that holds content again (it is listed live): that is new content, taken in as a step to run again.
+                    $existing->update(['status' => 'pending', 'receipt_id' => null, 'failure' => null, 'destroyed_at' => null]);
                 }
             }
 
