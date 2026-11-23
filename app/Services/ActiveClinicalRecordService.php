@@ -752,6 +752,14 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         if (DiagnosticResultEvidence::query()->where("source_owner", $owner)->where("supersedes_result_reference_id", $reference)->where("patient_id", "<>", $patientId)->exists()) {
             throw new \InvalidArgumentException("A correction of this result version is already on file for another patient.");
         }
+        // A line has no loop: a correction whose predecessor (directly or through its own predecessors) was itself a correction of this version
+        // would make each the other's successor, and neither current.
+        for ($ancestor = $supersedes, $steps = 0; $ancestor !== null && $steps < 100; $steps++) {
+            if ($ancestor === $reference) {
+                throw new \InvalidArgumentException("A result version cannot supersede one that supersedes it.");
+            }
+            $ancestor = DiagnosticResultEvidence::query()->where("source_owner", $owner)->where("result_reference_id", $ancestor)->value("supersedes_result_reference_id");
+        }
         // A source's versions form a line: a second, different correction of a version that is already corrected would fork it, and the
         // clinical record would then show two "current" results.
         if ($supersedes !== null && DiagnosticResultEvidence::query()->where("source_owner", $owner)->where("supersedes_result_reference_id", $supersedes)->where("result_reference_id", "<>", $reference)->exists()) {
@@ -817,6 +825,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         $rows = DiagnosticResultEvidence::query()
             ->where("patient_id", $patientId)
             ->orderBy("observed_at")
+            ->orderByRaw("source_version asc nulls last")
             ->orderBy("id")
             ->get();
         // Corrected by: found through the correcting version's own reference to this one, so delivery order does not matter.

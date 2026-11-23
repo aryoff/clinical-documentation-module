@@ -423,4 +423,24 @@ final class DiagnosticResultEvidenceContractTest extends TestCase
 
         $this->assertSame(2, DiagnosticResultEvidence::query()->count());
     }
+
+    public function test_a_line_has_no_loop_and_versions_released_together_read_in_version_order(): void
+    {
+        $actor = (string) User::factory()->create()->id;
+        [$a, $b] = [(string) Str::uuid(), (string) Str::uuid()];
+        $at = now()->subHour()->toIso8601String();
+        // B corrects A, delivered first; then A claiming to correct B would loop.
+        $this->records->recordDiagnosticResultEvidence($this->command($b, ['source_version' => 2, 'supersedes_result_reference_id' => $a, 'observed_at' => $at]), $actor);
+
+        try {
+            $this->records->recordDiagnosticResultEvidence($this->command($a, ['source_version' => 3, 'supersedes_result_reference_id' => $b, 'observed_at' => $at]), $actor);
+            $this->fail('A loop in the line was accepted.');
+        } catch (\InvalidArgumentException) {
+        }
+
+        // The original and its correction stamped with the same time still read in the order of their versions.
+        $this->records->recordDiagnosticResultEvidence($this->command($a, ['source_version' => 1, 'observed_at' => $at]), $actor);
+        $read = $this->records->diagnosticResultsForPatient($this->patient, (string) $this->clinician()->id, 'clinical-review')['results'];
+        $this->assertSame([$a, $b], array_column($read, 'result_reference_id'));
+    }
 }
