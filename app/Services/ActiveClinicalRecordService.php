@@ -723,13 +723,15 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             throw new \InvalidArgumentException("Diagnostic Result Evidence [summary] must be text.");
         }
         $observedAt = $command["observed_at"] ?? null;
-        if (!is_string($observedAt) || strtotime($observedAt) === false) {
+        // An ISO-8601 time only: the loose forms PHP's parser accepts ("last tuesday", "@epoch") are not a contract.
+        if (!is_string($observedAt) || preg_match('/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/', $observedAt) !== 1 || strtotime($observedAt) === false) {
             throw new \InvalidArgumentException("Diagnostic Result Evidence requires a valid [observed_at].");
         }
         // Finalized evidence was observed when it was released: never in the future.
         if (strtotime($observedAt) > time() + 60) {
             throw new \InvalidArgumentException("Diagnostic Result Evidence cannot be observed in the future.");
         }
+        $observedAt = \Illuminate\Support\Carbon::parse($observedAt)->toIso8601String();
 
         $existing = fn (): ?DiagnosticResultEvidence => DiagnosticResultEvidence::query()
             ->where("source_owner", $owner)

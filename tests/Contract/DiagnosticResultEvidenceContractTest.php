@@ -112,6 +112,8 @@ final class DiagnosticResultEvidenceContractTest extends TestCase
             'summary not text' => ['summary' => ['x']],
             'observed later than now' => ['observed_at' => now()->addDay()->toIso8601String()],
             'observed not a time' => ['observed_at' => 'yesterday-ish'],
+            'observed in words PHP would parse' => ['observed_at' => 'last tuesday'],
+            'observed as an epoch' => ['observed_at' => '@1700000000'],
             'supersedes itself' => ['supersedes_result_reference_id' => '__same__'],
             'a correction with no version' => ['supersedes_result_reference_id' => '3f1c2a9e-5b7d-4c8a-9e10-6a2b4d8f0c11', 'source_version' => null],
         ];
