@@ -10,8 +10,7 @@ import Content from "@/Layouts/AuthenticatedLayout/Components/Content";
 import { useModuleT } from "@/hooks/useModuleT";
 
 // Audit actions this module writes; any other code (written by a collaborating module) is shown as recorded.
-const auditActionCodes = ["active_clinical_record_read", "addendum_created", "addendum_signed", "allergy_asserted", "archive_requested", "break_glass_read", "diagnosis_asserted", "diagnosis_heads_read", "diagnosis_lineage_read", "diagnostic_result_evidence_recorded",
- "diagnostic_results_read", "document_read", "document_signed", "draft_created", "draft_updated", "handoff_accepted", "safety_facts_read", "discharge_summary_drafted", "discharge_summary_signed", "discharge_summary_explained", "external_evidence_file_read", "external_evidence_incorporated", "external_evidence_reviewed", "external_evidence_staged"];
+const auditActionCodes = ["active_clinical_record_read", "addendum_created", "addendum_signed", "allergy_asserted", "archive_requested", "break_glass_read", "diagnosis_asserted", "diagnosis_heads_read", "diagnosis_lineage_read", "diagnostic_result_evidence_recorded", "diagnostic_results_read", "document_read", "document_signed", "draft_created", "draft_updated", "handoff_accepted", "safety_facts_read", "discharge_summary_drafted", "discharge_summary_signed", "discharge_summary_explained", "external_evidence_file_read", "external_evidence_incorporated", "external_evidence_reviewed", "external_evidence_staged"];
 
 type AuditEvent = {
     id: string;
