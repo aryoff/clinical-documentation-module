@@ -341,7 +341,7 @@ final class DiagnosticResultEvidenceContractTest extends TestCase
         $this->assertSame(2, DiagnosticResultEvidence::query()->count());
     }
 
-    public function test_a_foreign_correction_delivered_before_its_predecessor_cannot_block_the_real_line(): void
+    public function test_a_version_whose_correction_on_file_names_it_for_another_patient_is_refused_loudly_not_silently_linked(): void
     {
         $actor = (string) User::factory()->create()->id;
         [$v1, $stray] = [(string) Str::uuid(), (string) Str::uuid()];
@@ -349,7 +349,8 @@ final class DiagnosticResultEvidenceContractTest extends TestCase
         // Another patient's correction names a version that has not arrived yet: nothing can tell it is foreign.
         $this->records->recordDiagnosticResultEvidence($this->command($stray, ['patient_id' => (string) Str::uuid(), 'source_version' => 2, 'supersedes_result_reference_id' => $v1]), $actor);
 
-        // The version arrives for its own patient: it is refused into the line, rather than adopting or being blocked by the stray.
+        // The version arrives for its own patient. A source version has one patient, so one of the two deliveries is a producer fault; the later
+        // one is refused and reported to its producer instead of the two being silently linked or one silently kept.
         try {
             $this->records->recordDiagnosticResultEvidence($this->command($v1), $actor);
             $this->fail("A version arrived into another patient's line.");
