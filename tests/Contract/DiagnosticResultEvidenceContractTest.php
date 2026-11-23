@@ -339,4 +339,22 @@ final class DiagnosticResultEvidenceContractTest extends TestCase
         $this->assertSame(0, $inserted);
         $this->assertSame(2, DiagnosticResultEvidence::query()->count());
     }
+
+    public function test_a_foreign_correction_delivered_before_its_predecessor_cannot_block_the_real_line(): void
+    {
+        $actor = (string) User::factory()->create()->id;
+        [$v1, $stray] = [(string) Str::uuid(), (string) Str::uuid()];
+
+        // Another patient's correction names a version that has not arrived yet: nothing can tell it is foreign.
+        $this->records->recordDiagnosticResultEvidence($this->command($stray, ['patient_id' => (string) Str::uuid(), 'source_version' => 2, 'supersedes_result_reference_id' => $v1]), $actor);
+
+        // The version arrives for its own patient: it is refused into the line, rather than adopting or being blocked by the stray.
+        try {
+            $this->records->recordDiagnosticResultEvidence($this->command($v1), $actor);
+            $this->fail("A version arrived into another patient's line.");
+        } catch (\InvalidArgumentException) {
+        }
+
+        $this->assertSame(1, DiagnosticResultEvidence::query()->count());
+    }
 }

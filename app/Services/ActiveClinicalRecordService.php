@@ -735,6 +735,11 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         if ($supersedes !== null && DiagnosticResultEvidence::query()->where("source_owner", $owner)->where("result_reference_id", $supersedes)->where("patient_id", "<>", $patientId)->exists()) {
             throw new \InvalidArgumentException("A result version cannot supersede another patient's.");
         }
+        // The same from the other side, for delivery in the other order: a correction on file that names this version for a different
+        // patient means one of the two is wrong, and a version never arrives into another patient's line.
+        if (DiagnosticResultEvidence::query()->where("source_owner", $owner)->where("supersedes_result_reference_id", $reference)->where("patient_id", "<>", $patientId)->exists()) {
+            throw new \InvalidArgumentException("A correction of this result version is already on file for another patient.");
+        }
         // A source's versions form a line: a second, different correction of a version that is already corrected would fork it, and the
         // clinical record would then show two "current" results.
         if ($supersedes !== null && DiagnosticResultEvidence::query()->where("source_owner", $owner)->where("supersedes_result_reference_id", $supersedes)->where("result_reference_id", "<>", $reference)->exists()) {
