@@ -108,6 +108,7 @@ final class DiagnosticResultEvidenceContractTest extends TestCase
             'no code' => ['code' => ''],
             'version zero' => ['source_version' => 0],
             'version text' => ['source_version' => 'two'],
+            'version beyond what is stored' => ['source_version' => 2147483648],
             'summary not text' => ['summary' => ['x']],
             'observed later than now' => ['observed_at' => now()->addDay()->toIso8601String()],
             'observed not a time' => ['observed_at' => 'yesterday-ish'],

@@ -707,7 +707,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             throw new \InvalidArgumentException("A result version cannot supersede itself.");
         }
         $version = $command["source_version"] ?? null;
-        if ($version !== null && (!is_int($version) || $version < 1)) {
+        if ($version !== null && (!is_int($version) || $version < 1 || $version > 2147483647)) {
             throw new \InvalidArgumentException("Diagnostic Result Evidence [source_version] must be a positive integer.");
         }
         // A correction is a later version: it says which one it is, so the clinical record can put the line in order.
