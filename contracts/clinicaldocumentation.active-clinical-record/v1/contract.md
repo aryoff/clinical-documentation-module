@@ -81,7 +81,7 @@ Hospital Registration IDs, and Patient Registry IDs are UUID strings.
   `coding_system`, `code`, `display`, optional `summary`, and `observed_at` (when
   it was released; never in the future). It returns an evidence fact (with
   `recorded`) and **creates no assertion and no handoff**. Only
-  ClinicalDocumentation asserts a diagnosis. A source version is projected
+  ClinicalDocumentation asserts a diagnosis. The patient and `registration_id` are the producing specialty's attribution of its own order (Diagnostics already refuses an order without a resolved patient and a real registration), recorded as given and never re-derived here. A source version is projected
   **once** (`source_owner` + `result_reference_id`): a repeat or a lost reply
   returns the same fact with `recorded: false` and changes nothing, and a
   concurrent delivery cannot create a second. An unregistered or absent
