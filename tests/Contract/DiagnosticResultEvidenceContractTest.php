@@ -275,4 +275,21 @@ final class DiagnosticResultEvidenceContractTest extends TestCase
 
         $this->assertSame(1, DiagnosticResultEvidence::query()->count());
     }
+
+    public function test_a_version_is_corrected_once_so_the_clinical_record_never_shows_two_current_results(): void
+    {
+        $actor = (string) User::factory()->create()->id;
+        [$v1, $v2, $other] = [(string) Str::uuid(), (string) Str::uuid(), (string) Str::uuid()];
+        $this->records->recordDiagnosticResultEvidence($this->command($v1), $actor);
+        $this->records->recordDiagnosticResultEvidence($this->command($v2, ['source_version' => 2, 'supersedes_result_reference_id' => $v1]), $actor);
+
+        try {
+            $this->records->recordDiagnosticResultEvidence($this->command($other, ['source_version' => 2, 'supersedes_result_reference_id' => $v1]), $actor);
+            $this->fail('A second correction of an already corrected version forked the line.');
+        } catch (\InvalidArgumentException) {
+        }
+
+        $current = array_filter($this->records->diagnosticResultsForPatient($this->patient, (string) $this->clinician()->id, 'clinical-review')['results'], fn (array $r): bool => $r['is_current']);
+        $this->assertSame([$v2], array_column(array_values($current), 'result_reference_id'));
+    }
 }

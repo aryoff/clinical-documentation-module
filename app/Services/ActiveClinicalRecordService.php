@@ -735,6 +735,11 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         if ($supersedes !== null && DiagnosticResultEvidence::query()->where("source_owner", $owner)->where("result_reference_id", $supersedes)->where("patient_id", "<>", $patientId)->exists()) {
             throw new \InvalidArgumentException("A result version cannot supersede another patient's.");
         }
+        // A source's versions form a line: a second, different correction of a version that is already corrected would fork it, and the
+        // clinical record would then show two "current" results.
+        if ($supersedes !== null && DiagnosticResultEvidence::query()->where("source_owner", $owner)->where("supersedes_result_reference_id", $supersedes)->where("result_reference_id", "<>", $reference)->exists()) {
+            throw new \InvalidArgumentException("This result version was already superseded by another.");
+        }
         if (($found = $existing()) !== null) {
             // A repeat must be the same delivery: a different patient, registration, version or predecessor for the same source version is
             // a conflict to refuse, not an acknowledgement of something that was never recorded.
@@ -766,7 +771,9 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         ];
         if (DiagnosticResultEvidence::query()->insertOrIgnore($row) === 0) {
             // Another delivery of the same source version won the race: that one is the projection.
-            return $this->evidenceFact($existing() ?? throw new \LogicException("A projected source version vanished.")) + ["recorded" => false];
+            $won = $existing() ?? throw new \LogicException("The projection of a source version was neither recorded nor found.");
+
+            return $this->evidenceFact($won) + ["recorded" => false];
         }
         $evidence = DiagnosticResultEvidence::query()->findOrFail($row["id"]);
         $this->audit(
