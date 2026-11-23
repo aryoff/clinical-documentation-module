@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\ClinicalDocumentation\Tests\Contract;
 
+use App\Exceptions\UserFacingException;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\ClinicalDocumentation\Contracts\ActiveClinicalRecordContract;
 use Modules\ClinicalDocumentation\Models\DiagnosisAssertion;
+use Modules\ClinicalDocumentation\Tests\Support\RegistersDiagnosticSpecialties;
 use Tests\TestCase;
 
 /**
@@ -26,6 +28,7 @@ use Tests\TestCase;
 class DiagnosisLineageContractTest extends TestCase
 {
     use RefreshDatabase;
+    use RegistersDiagnosticSpecialties;
 
     private ActiveClinicalRecordContract $records;
 
@@ -35,6 +38,8 @@ class DiagnosisLineageContractTest extends TestCase
     {
         parent::setUp();
 
+        // The specialties this lineage cites as evidence sources are named here, not assumed from which modules a checkout enables.
+        $this->registerSpecialties(['radiology', 'laboratory']);
         $this->records = app(ActiveClinicalRecordContract::class);
         $this->clinician = User::factory()->create();
     }
@@ -112,8 +117,9 @@ class DiagnosisLineageContractTest extends TestCase
         try {
             $this->records->assertDiagnosis($this->diagnosis($signed, 'I10', 'Essential hypertension', 'initial'), $actor);
         } catch (\LogicException $exception) {
-            $this->assertInstanceOf(\App\Exceptions\UserFacingException::class, $exception);
+            $this->assertInstanceOf(UserFacingException::class, $exception);
             $this->assertSame('Perjalanan perawatan ini sudah memiliki Penetapan Diagnosis awal; tambahkan atau gantikan penetapan itu.', $exception->getMessage());
+
             return;
         }
         $this->fail('A second initial assertion must be refused.');
