@@ -1,6 +1,6 @@
 # Capability contract: `clinicaldocumentation.active-clinical-record` v1
 
-**Owner:** ClinicalDocumentation · **Interaction mode:** `sync` · **Version:** 1.4.0
+**Owner:** ClinicalDocumentation · **Interaction mode:** `sync` · **Version:** 1.5.0
 
 ClinicalDocumentation alone owns signed clinical content, signed addenda,
 Diagnosis Assertions, Allergy Assertions, clinical access evidence, and archive
