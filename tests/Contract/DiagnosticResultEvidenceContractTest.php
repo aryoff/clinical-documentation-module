@@ -224,4 +224,55 @@ final class DiagnosticResultEvidenceContractTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->records->diagnosticResultsForPatient($this->patient, (string) $clinician->id, '  ');
     }
+
+    public function test_a_redelivery_that_says_something_different_about_the_same_source_version_is_refused_not_acknowledged(): void
+    {
+        $actor = (string) User::factory()->create()->id;
+        $command = $this->command((string) Str::uuid());
+        $this->records->recordDiagnosticResultEvidence($command, $actor);
+
+        foreach ([['patient_id' => (string) Str::uuid()], ['registration_id' => (string) Str::uuid()], ['source_version' => 2], ['supersedes_result_reference_id' => (string) Str::uuid()]] as $different) {
+            try {
+                $this->records->recordDiagnosticResultEvidence(array_merge($command, $different), $actor);
+                $this->fail('A conflicting redelivery was acknowledged: '.json_encode($different));
+            } catch (\InvalidArgumentException) {
+            }
+        }
+
+        $this->assertSame(1, DiagnosticResultEvidence::query()->count());
+    }
+
+    public function test_a_correction_cannot_name_another_patients_version_and_never_marks_it_superseded(): void
+    {
+        $actor = (string) User::factory()->create()->id;
+        $theirs = (string) Str::uuid();
+        $this->records->recordDiagnosticResultEvidence($this->command($theirs, ['patient_id' => (string) Str::uuid()]), $actor);
+
+        try {
+            $this->records->recordDiagnosticResultEvidence($this->command((string) Str::uuid(), ['supersedes_result_reference_id' => $theirs]), $actor);
+            $this->fail("A version superseded another patient's.");
+        } catch (\InvalidArgumentException) {
+        }
+
+        $this->assertSame(1, DiagnosticResultEvidence::query()->count());
+    }
+
+    public function test_a_projection_inside_a_callers_transaction_survives_a_concurrent_delivery_of_the_same_version(): void
+    {
+        $actor = (string) User::factory()->create()->id;
+        $command = $this->command((string) Str::uuid());
+
+        // A retry inside a transaction that already contains the first delivery's winner must not abort the transaction.
+        \Illuminate\Support\Facades\DB::transaction(function () use ($command, $actor): void {
+            $this->records->recordDiagnosticResultEvidence($command, $actor);
+            DiagnosticResultEvidence::query()->insertOrIgnore([
+                'id' => (string) Str::uuid(), 'patient_id' => $this->patient, 'source_owner' => 'waveform', 'result_reference_id' => $command['result_reference_id'],
+                'coding_system' => 'x', 'code' => 'x', 'display' => 'x', 'observed_at' => now(), 'released_by' => $actor, 'released_by_name' => 'x',
+            ]);
+            $again = $this->records->recordDiagnosticResultEvidence($command, $actor);
+            $this->assertFalse($again['recorded']);
+        });
+
+        $this->assertSame(1, DiagnosticResultEvidence::query()->count());
+    }
 }

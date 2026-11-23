@@ -731,31 +731,44 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             ->where("source_owner", $owner)
             ->where("result_reference_id", $reference)
             ->first();
+        // A correction names a version of the same patient's record: another patient's is never its predecessor.
+        if ($supersedes !== null && DiagnosticResultEvidence::query()->where("source_owner", $owner)->where("result_reference_id", $supersedes)->where("patient_id", "<>", $patientId)->exists()) {
+            throw new \InvalidArgumentException("A result version cannot supersede another patient's.");
+        }
         if (($found = $existing()) !== null) {
+            // A repeat must be the same delivery: a different patient, registration, version or predecessor for the same source version is
+            // a conflict to refuse, not an acknowledgement of something that was never recorded.
+            if ($found->patient_id !== $patientId || $found->registration_id !== $registrationId
+                || $found->source_version !== $version || $found->supersedes_result_reference_id !== $supersedes) {
+                throw new \InvalidArgumentException("This source version was already projected with different attribution.");
+            }
+
             return $this->evidenceFact($found) + ["recorded" => false];
         }
 
-        try {
-            $evidence = DiagnosticResultEvidence::create([
-                "patient_id" => $patientId,
-                "registration_id" => $registrationId,
-                "source_owner" => $owner,
-                "result_reference_id" => $reference,
-                "source_version" => $version,
-                "supersedes_result_reference_id" => $supersedes,
-                "coding_system" => $command["coding_system"],
-                "code" => $command["code"],
-                "display" => $command["display"],
-                "summary" => $command["summary"] ?? null,
-                "observed_at" => $observedAt,
-                "released_by" => $actorId,
-                "released_by_name" => $this->actorName($actorId),
-                "recorded_at" => now(),
-            ]);
-        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+        // Inserted without raising on a concurrent delivery of the same source version, so a caller's open transaction is never aborted.
+        $row = [
+            "id" => (string) \Illuminate\Support\Str::uuid(),
+            "patient_id" => $patientId,
+            "registration_id" => $registrationId,
+            "source_owner" => $owner,
+            "result_reference_id" => $reference,
+            "source_version" => $version,
+            "supersedes_result_reference_id" => $supersedes,
+            "coding_system" => $command["coding_system"],
+            "code" => $command["code"],
+            "display" => $command["display"],
+            "summary" => $command["summary"] ?? null,
+            "observed_at" => $observedAt,
+            "released_by" => $actorId,
+            "released_by_name" => $this->actorName($actorId),
+            "recorded_at" => now(),
+        ];
+        if (DiagnosticResultEvidence::query()->insertOrIgnore($row) === 0) {
             // Another delivery of the same source version won the race: that one is the projection.
             return $this->evidenceFact($existing() ?? throw new \LogicException("A projected source version vanished.")) + ["recorded" => false];
         }
+        $evidence = DiagnosticResultEvidence::query()->findOrFail($row["id"]);
         $this->audit(
             "diagnostic_result_evidence_recorded",
             $actorId,
@@ -793,6 +806,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             ->get();
         // Corrected by: found through the correcting version's own reference to this one, so delivery order does not matter.
         $supersededBy = DiagnosticResultEvidence::query()
+            ->where("patient_id", $patientId)
             ->whereIn("supersedes_result_reference_id", $rows->pluck("result_reference_id"))
             ->get(["source_owner", "result_reference_id", "supersedes_result_reference_id"])
             ->mapWithKeys(fn (DiagnosticResultEvidence $later): array => [$later->source_owner . ":" . $later->supersedes_result_reference_id => $later->result_reference_id]);
