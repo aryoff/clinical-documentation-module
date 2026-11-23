@@ -737,6 +737,12 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             ->where("source_owner", $owner)
             ->where("result_reference_id", $reference)
             ->first();
+        if (($found = $existing()) !== null) {
+            $this->assertSameDelivery($found, $patientId, $registrationId, $version, $supersedes);
+
+            return $this->evidenceFact($found) + ["recorded" => false];
+        }
+
         // A correction names a version of the same patient's record: another patient's is never its predecessor.
         if ($supersedes !== null && DiagnosticResultEvidence::query()->where("source_owner", $owner)->where("result_reference_id", $supersedes)->where("patient_id", "<>", $patientId)->exists()) {
             throw new \InvalidArgumentException("A result version cannot supersede another patient's.");
@@ -751,12 +757,6 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         if ($supersedes !== null && DiagnosticResultEvidence::query()->where("source_owner", $owner)->where("supersedes_result_reference_id", $supersedes)->where("result_reference_id", "<>", $reference)->exists()) {
             throw new \InvalidArgumentException("This result version was already superseded by another.");
         }
-        if (($found = $existing()) !== null) {
-            $this->assertSameDelivery($found, $patientId, $registrationId, $version, $supersedes);
-
-            return $this->evidenceFact($found) + ["recorded" => false];
-        }
-
         // Inserted without raising on a concurrent delivery of the same source version, so a caller's open transaction is never aborted.
         $row = [
             "id" => (string) \Illuminate\Support\Str::uuid(),
