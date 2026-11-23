@@ -90,7 +90,10 @@ Hospital Registration IDs, and Patient Registry IDs are UUID strings.
   two is delivered second is refused and the refusal is the producer's to see;
   nothing is silently linked or adopted. A source version is projected
   **once** (`source_owner` + `result_reference_id`): a repeat or a lost reply
-  returns the same fact with `recorded: false` and changes nothing, and a
+  returns the same fact with `recorded: false` and changes nothing (what a
+  repeat says about the finding itself — `code`, `display`, `summary` — is
+  ignored: the stored projection is the immutable record, while a different
+  patient, registration, version or predecessor is refused), and a
   concurrent delivery cannot create a second. An unregistered or absent
   specialty, a malformed identifier or a future `observed_at` is refused.
 - `diagnosticResultsForPatient(patientId, actorId, purpose)` is the clinical
