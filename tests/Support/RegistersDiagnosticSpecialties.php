@@ -13,8 +13,12 @@ use App\Support\CapabilityRegistry;
  */
 trait RegistersDiagnosticSpecialties
 {
-    /** @param list<string> $kinds service kinds registered at `diagnostics.specialties` (none: Diagnostics alone, a core-only composition) */
-    private function registerSpecialties(array $kinds): void
+    /**
+     * @param  list<string>  $kinds  service kinds registered at `diagnostics.specialties` (none: Diagnostics alone, a core-only composition)
+     * @param  list<string>  $disabled  kinds whose module declares a registration but is disabled in the composition
+     * @param  list<string>  $mismatched  kinds registered under a key that is not the service kind they declare (an invalid registration)
+     */
+    private function registerSpecialties(array $kinds, array $disabled = [], array $mismatched = []): void
     {
         if (! is_file(base_path('Modules/Diagnostics/module.json'))) {
             $this->markTestSkipped('The registered-specialty evidence needs the Diagnostics manifest that declares the extension point.');
@@ -38,7 +42,7 @@ trait RegistersDiagnosticSpecialties
         $this->copyTree(base_path('Modules/Diagnostics/contracts'), "$modules/Diagnostics/contracts");
         $this->copyTree(base_path('Modules/Diagnostics/tests/Contract'), "$modules/Diagnostics/tests/Contract");
 
-        foreach ($kinds as $kind) {
+        foreach ([...$kinds, ...$disabled, ...$mismatched] as $kind) {
             $module = ucfirst($kind);
             $path = "$modules/$module";
             mkdir("$path/contracts", 0777, true);
@@ -57,14 +61,14 @@ trait RegistersDiagnosticSpecialties
                     'extensions' => [[
                         'point' => 'diagnostics.specialties', 'pointVersion' => '^1.0', 'key' => $kind, 'capability' => $kind.'.diagnostic-adapter',
                         'descriptor' => [
-                            'service_kind' => $kind,
+                            'service_kind' => in_array($kind, $mismatched, true) ? 'something-else' : $kind,
                             'examination_schemas' => [['id' => $kind.'.examination-request', 'version' => '1.0.0']],
                             'findings_schemas' => [['id' => $kind.'.findings', 'version' => '1.0.0']],
                         ],
                     ]],
                 ],
             ], JSON_THROW_ON_ERROR));
-            $statuses[$module] = true;
+            $statuses[$module] = ! in_array($kind, $disabled, true);
         }
 
         file_put_contents("$root/modules_statuses.json", json_encode($statuses, JSON_THROW_ON_ERROR));

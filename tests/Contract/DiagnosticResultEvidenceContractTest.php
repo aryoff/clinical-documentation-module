@@ -292,4 +292,51 @@ final class DiagnosticResultEvidenceContractTest extends TestCase
         $current = array_filter($this->records->diagnosticResultsForPatient($this->patient, (string) $this->clinician()->id, 'clinical-review')['results'], fn (array $r): bool => $r['is_current']);
         $this->assertSame([$v2], array_column(array_values($current), 'result_reference_id'));
     }
+
+    public function test_a_specialty_declared_by_a_disabled_module_or_registered_invalidly_is_not_registered(): void
+    {
+        $this->registerSpecialties(['waveform'], disabled: ['ghost'], mismatched: ['crooked']);
+        $records = app(ActiveClinicalRecordContract::class);
+        $actor = (string) User::factory()->create()->id;
+
+        $records->recordDiagnosticResultEvidence($this->command((string) Str::uuid()), $actor);
+        foreach (['ghost', 'crooked', 'something-else'] as $owner) {
+            try {
+                $records->recordDiagnosticResultEvidence($this->command((string) Str::uuid(), ['source_owner' => $owner]), $actor);
+                $this->fail("[{$owner}] was accepted although its registration is disabled or invalid.");
+            } catch (\InvalidArgumentException) {
+            }
+        }
+    }
+
+    public function test_a_concurrent_delivery_with_other_attribution_is_refused_like_a_later_one(): void
+    {
+        $actor = (string) User::factory()->create()->id;
+        $command = $this->command((string) Str::uuid());
+        $this->records->recordDiagnosticResultEvidence($command, $actor);
+        $service = new \ReflectionMethod($this->records, 'assertSameDelivery');
+        $found = DiagnosticResultEvidence::query()->sole();
+
+        // The race path runs the very same comparison on the winner's row.
+        $service->invoke($this->records, $found, $this->patient, $command['registration_id'], 1, null);
+        $this->expectException(\InvalidArgumentException::class);
+        $service->invoke($this->records, $found, (string) Str::uuid(), $command['registration_id'], 1, null);
+    }
+
+    public function test_the_database_itself_refuses_a_forked_line_when_two_corrections_race(): void
+    {
+        $actor = (string) User::factory()->create()->id;
+        [$v1, $v2, $v3] = [(string) Str::uuid(), (string) Str::uuid(), (string) Str::uuid()];
+        $this->records->recordDiagnosticResultEvidence($this->command($v1), $actor);
+        $this->records->recordDiagnosticResultEvidence($this->command($v2, ['source_version' => 2, 'supersedes_result_reference_id' => $v1]), $actor);
+
+        // The application's own check passed for both in a race; the second insert is refused by the index, not silently kept.
+        $inserted = DiagnosticResultEvidence::query()->insertOrIgnore([
+            'id' => (string) Str::uuid(), 'patient_id' => $this->patient, 'source_owner' => 'waveform', 'result_reference_id' => $v3, 'supersedes_result_reference_id' => $v1,
+            'coding_system' => 'x', 'code' => 'x', 'display' => 'x', 'observed_at' => now(), 'released_by' => $actor, 'released_by_name' => 'x',
+        ]);
+
+        $this->assertSame(0, $inserted);
+        $this->assertSame(2, DiagnosticResultEvidence::query()->count());
+    }
 }

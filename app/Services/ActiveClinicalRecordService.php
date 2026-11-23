@@ -741,12 +741,7 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             throw new \InvalidArgumentException("This result version was already superseded by another.");
         }
         if (($found = $existing()) !== null) {
-            // A repeat must be the same delivery: a different patient, registration, version or predecessor for the same source version is
-            // a conflict to refuse, not an acknowledgement of something that was never recorded.
-            if ($found->patient_id !== $patientId || $found->registration_id !== $registrationId
-                || $found->source_version !== $version || $found->supersedes_result_reference_id !== $supersedes) {
-                throw new \InvalidArgumentException("This source version was already projected with different attribution.");
-            }
+            $this->assertSameDelivery($found, $patientId, $registrationId, $version, $supersedes);
 
             return $this->evidenceFact($found) + ["recorded" => false];
         }
@@ -771,7 +766,9 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         ];
         if (DiagnosticResultEvidence::query()->insertOrIgnore($row) === 0) {
             // Another delivery of the same source version won the race: that one is the projection.
-            $won = $existing() ?? throw new \LogicException("The projection of a source version was neither recorded nor found.");
+            // Nothing won for this source version, so the other delivery that raced this one corrected the same predecessor first.
+            $won = $existing() ?? throw new \InvalidArgumentException("This result version was already superseded by another.");
+            $this->assertSameDelivery($won, $patientId, $registrationId, $version, $supersedes);
 
             return $this->evidenceFact($won) + ["recorded" => false];
         }
@@ -827,12 +824,28 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         return ["patient_id" => $patientId, "purpose" => $purpose, "results" => $results];
     }
 
+    /**
+     * A repeat must be the same delivery: a different patient, registration, version or predecessor for the same source version is a
+     * conflict to refuse, not an acknowledgement of something that was never recorded.
+     */
+    private function assertSameDelivery(DiagnosticResultEvidence $found, string $patientId, ?string $registrationId, ?int $version, ?string $supersedes): void
+    {
+        if ($found->patient_id !== $patientId || $found->registration_id !== $registrationId
+            || $found->source_version !== $version || $found->supersedes_result_reference_id !== $supersedes) {
+            throw new \InvalidArgumentException("This source version was already projected with different attribution.");
+        }
+    }
+
     /** @return list<string> the service kinds of the diagnostic specialties registered in the enabled composition */
     private function registeredSpecialties(): array
     {
+        // A registration whose key is not its declared service kind is invalid, and Diagnostics ignores it too.
         return array_values(array_unique(array_map(
             static fn (array $registration): string => $registration["key"],
-            $this->capabilities->extensions("diagnostics.specialties"),
+            array_filter(
+                $this->capabilities->extensions("diagnostics.specialties"),
+                static fn (array $registration): bool => ($registration["descriptor"]["service_kind"] ?? null) === $registration["key"],
+            ),
         )));
     }
 
