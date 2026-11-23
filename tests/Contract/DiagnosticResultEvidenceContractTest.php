@@ -112,6 +112,7 @@ final class DiagnosticResultEvidenceContractTest extends TestCase
             'observed later than now' => ['observed_at' => now()->addDay()->toIso8601String()],
             'observed not a time' => ['observed_at' => 'yesterday-ish'],
             'supersedes itself' => ['supersedes_result_reference_id' => '__same__'],
+            'a correction with no version' => ['supersedes_result_reference_id' => '3f1c2a9e-5b7d-4c8a-9e10-6a2b4d8f0c11', 'source_version' => null],
         ];
         foreach ($bad as $name => $override) {
             $reference = (string) Str::uuid();
@@ -356,5 +357,18 @@ final class DiagnosticResultEvidenceContractTest extends TestCase
         }
 
         $this->assertSame(1, DiagnosticResultEvidence::query()->count());
+    }
+
+    public function test_a_redelivery_in_capitals_is_the_same_delivery(): void
+    {
+        $actor = (string) User::factory()->create()->id;
+        $command = $this->command((string) Str::uuid());
+        $first = $this->records->recordDiagnosticResultEvidence($command, $actor);
+
+        $again = $this->records->recordDiagnosticResultEvidence(array_merge($command, [
+            'result_reference_id' => strtoupper($command['result_reference_id']), 'patient_id' => strtoupper($command['patient_id']), 'registration_id' => strtoupper($command['registration_id']),
+        ]), $actor);
+
+        $this->assertSame([$first['evidence_id'], false], [$again['evidence_id'], $again['recorded']]);
     }
 }

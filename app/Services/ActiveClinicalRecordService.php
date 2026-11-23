@@ -710,6 +710,10 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         if ($version !== null && (!is_int($version) || $version < 1)) {
             throw new \InvalidArgumentException("Diagnostic Result Evidence [source_version] must be a positive integer.");
         }
+        // A correction is a later version: it says which one it is, so the clinical record can put the line in order.
+        if ($supersedes !== null && $version === null) {
+            throw new \InvalidArgumentException("A correction requires its [source_version].");
+        }
         foreach (["coding_system" => 64, "code" => 64, "display" => 255] as $key => $max) {
             if (mb_strlen($this->requiredString($command, $key)) > $max) {
                 throw new \InvalidArgumentException("Diagnostic Result Evidence [{$key}] is too long.");
@@ -861,7 +865,8 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
             throw new \InvalidArgumentException("Clinical record command [{$key}] must be an identifier.");
         }
 
-        return $value;
+        // Stored and compared in the one spelling the database returns, so a redelivery in capitals is the same delivery.
+        return strtolower($value);
     }
 
     private function optionalUuid(array $command, string $key): ?string

@@ -76,7 +76,7 @@ Hospital Registration IDs, and Patient Registry IDs are UUID strings.
   list of owners and no Diagnostics dependency) publish the immutable finalized
   finding of one source version: `patient_id` and `result_reference_id`
   (identifiers), optional `registration_id`, `source_owner`, optional
-  `source_version` (positive integer), optional
+  `source_version` (positive integer; required whenever a version is corrected), optional
   `supersedes_result_reference_id` (the source version this one corrects),
   `coding_system`, `code`, `display`, optional `summary`, and `observed_at` (when
   it was released; never in the future). It returns an evidence fact (with
