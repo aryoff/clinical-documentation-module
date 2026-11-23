@@ -375,4 +375,52 @@ final class DiagnosticResultEvidenceContractTest extends TestCase
 
         $this->assertSame([$first['evidence_id'], false], [$again['evidence_id'], $again['recorded']]);
     }
+
+    /** Another delivery of the same source version lands between this one's look and its insert: the winner is the projection. */
+    private function raceWith(array $winner): void
+    {
+        $fired = false;
+        \Illuminate\Support\Facades\DB::beforeExecuting(function (string $query) use (&$fired, $winner): void {
+            if ($fired || ! str_starts_with(strtolower(ltrim($query)), 'insert into "cd_diagnostic_result_evidence"')) {
+                return;
+            }
+            $fired = true;
+            DiagnosticResultEvidence::query()->insertOrIgnore($winner + ['id' => (string) Str::uuid(), 'coding_system' => 'LOINC', 'code' => '11524-6', 'display' => 'ECG study', 'observed_at' => now()->subMinute(), 'released_by' => (string) Str::uuid(), 'released_by_name' => 'Rival']);
+        });
+    }
+
+    public function test_the_racing_path_returns_the_winner_when_it_is_the_same_delivery_and_refuses_when_it_is_not(): void
+    {
+        $actor = (string) User::factory()->create()->id;
+        $command = $this->command((string) Str::uuid());
+        $this->raceWith(['patient_id' => $this->patient, 'registration_id' => $command['registration_id'], 'source_owner' => 'waveform', 'result_reference_id' => $command['result_reference_id'], 'source_version' => 1]);
+
+        $fact = $this->records->recordDiagnosticResultEvidence($command, $actor);
+
+        $this->assertFalse($fact['recorded']);
+        $this->assertSame(1, DiagnosticResultEvidence::query()->count());
+
+        $other = $this->command((string) Str::uuid());
+        $this->raceWith(['patient_id' => (string) Str::uuid(), 'source_owner' => 'waveform', 'result_reference_id' => $other['result_reference_id'], 'source_version' => 1]);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->records->recordDiagnosticResultEvidence($other, $actor);
+    }
+
+    public function test_the_racing_path_refuses_a_correction_that_lost_the_predecessor_to_another(): void
+    {
+        $actor = (string) User::factory()->create()->id;
+        $v1 = (string) Str::uuid();
+        $this->records->recordDiagnosticResultEvidence($this->command($v1), $actor);
+        $mine = $this->command((string) Str::uuid(), ['source_version' => 2, 'supersedes_result_reference_id' => $v1]);
+        // A different correction of the same predecessor wins between this delivery's look and its insert.
+        $this->raceWith(['patient_id' => $this->patient, 'source_owner' => 'waveform', 'result_reference_id' => (string) Str::uuid(), 'source_version' => 2, 'supersedes_result_reference_id' => $v1]);
+
+        try {
+            $this->records->recordDiagnosticResultEvidence($mine, $actor);
+            $this->fail('A correction that lost its predecessor to another was acknowledged.');
+        } catch (\InvalidArgumentException) {
+        }
+
+        $this->assertSame(2, DiagnosticResultEvidence::query()->count());
+    }
 }
