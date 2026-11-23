@@ -12,6 +12,7 @@
     "audit.action_label.diagnosis_heads_read": "Diagnosis terkini dibaca",
     "audit.action_label.diagnosis_lineage_read": "Garis keturunan diagnosis dibaca",
     "audit.action_label.diagnostic_result_evidence_recorded": "Bukti hasil diagnostik dicatat",
+    "audit.action_label.diagnostic_results_read": "Hasil diagnostik dibaca",
     "audit.action_label.discharge_summary_drafted": "Ringkasan pulang disusun",
     "audit.action_label.discharge_summary_explained": "Ringkasan pulang dijelaskan",
     "audit.action_label.discharge_summary_signed": "Ringkasan pulang ditandatangani",

@@ -21,7 +21,7 @@ class DiagnosticResultEvidence extends Model
 
     protected $table = 'cd_diagnostic_result_evidence';
 
-    protected $fillable = ['patient_id', 'registration_id', 'source_owner', 'result_reference_id', 'coding_system', 'code', 'display', 'summary', 'destroyed_at', 'observed_at', 'released_by', 'released_by_name', 'recorded_at'];
+    protected $fillable = ['patient_id', 'registration_id', 'source_owner', 'result_reference_id', 'source_version', 'supersedes_result_reference_id', 'coding_system', 'code', 'display', 'summary', 'destroyed_at', 'observed_at', 'released_by', 'released_by_name', 'recorded_at'];
 
     protected $casts = ['observed_at' => 'datetime', 'recorded_at' => 'datetime', 'destroyed_at' => 'datetime'];
 

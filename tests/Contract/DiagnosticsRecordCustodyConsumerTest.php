@@ -139,13 +139,13 @@ class DiagnosticsRecordCustodyConsumerTest extends TestCase
 
         DiagnosticResultEvidence::query()->create([
             'patient_id' => (string) \Illuminate\Support\Str::uuid(), 'registration_id' => (string) \Illuminate\Support\Str::uuid(), 'source_owner' => 'laboratory',
-            'result_reference_id' => $reference, 'coding_system' => 'x', 'code' => 'K', 'display' => 'Potassium', 'summary' => '9.9', 'observed_at' => now(), 'released_by' => (string) \Illuminate\Support\Str::uuid(), 'released_by_name' => 'Releaser',
+            'result_reference_id' => (string) \Illuminate\Support\Str::uuid(), 'coding_system' => 'x', 'code' => 'K', 'display' => 'Potassium', 'summary' => '9.9', 'observed_at' => now(), 'released_by' => (string) \Illuminate\Support\Str::uuid(), 'released_by_name' => 'Releaser',
         ]);
 
         $items = app(DestructionCustody::class)->inventory($patient)['items'];
 
         $this->assertContains(['custodian' => 'clinicaldocumentation', 'ref_type' => 'diagnostic_result_evidence', 'ref_id' => $evidence->id, 'state' => 'live'], $items);
-        $this->assertCount(1, array_filter($items, fn (array $i): bool => $i['custodian'] === 'clinicaldocumentation'), 'another patient\'s copy of the same reference is not this patient\'s');
+        $this->assertCount(1, array_filter($items, fn (array $i): bool => $i['custodian'] === 'clinicaldocumentation'), 'another patient\'s projection is not this patient\'s (a source version is projected once, so it can never share a reference)');
     }
 
     public function test_a_step_goes_to_the_custodian_named_with_its_custodian_and_returns_its_receipt(): void

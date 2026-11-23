@@ -70,12 +70,32 @@ Hospital Registration IDs, and Patient Registry IDs are UUID strings.
   handoffId, purpose)` returns the same read to a clinician taking the case
   over, anchored by the originating clinician's accepted handoff. Both actors
   are audited.
-- `recordDiagnosticResultEvidence(command, actorId)` lets a result owner
-  (`laboratory` or `radiology`) publish an immutable finding: `patient_id`,
-  optional `registration_id`, `source_owner`, `result_reference_id`,
-  `coding_system`, `code`, `display`, optional `summary`, and `observed_at`.
-  It returns an evidence fact and **creates no assertion**. Only
-  ClinicalDocumentation asserts a diagnosis.
+- `recordDiagnosticResultEvidence(command, actorId)` lets a **registered
+  diagnostic specialty** (a `source_owner` that declares a
+  `diagnostics.specialties` extension in the enabled composition, so no closed
+  list of owners and no Diagnostics dependency) publish the immutable finalized
+  finding of one source version: `patient_id` and `result_reference_id`
+  (identifiers), optional `registration_id`, `source_owner`, optional
+  `source_version` (positive integer), optional
+  `supersedes_result_reference_id` (the source version this one corrects),
+  `coding_system`, `code`, `display`, optional `summary`, and `observed_at` (when
+  it was released; never in the future). It returns an evidence fact (with
+  `recorded`) and **creates no assertion and no handoff**. Only
+  ClinicalDocumentation asserts a diagnosis. A source version is projected
+  **once** (`source_owner` + `result_reference_id`): a repeat or a lost reply
+  returns the same fact with `recorded: false` and changes nothing, and a
+  concurrent delivery cannot create a second. An unregistered or absent
+  specialty, a malformed identifier or a future `observed_at` is refused.
+- `diagnosticResultsForPatient(patientId, actorId, purpose)` is the clinical
+  read of a patient's finalized diagnostic results, for a clinician with an
+  accepted treatment handoff (audited; it grants no document access). Each
+  result carries its source attribution, `source_version`,
+  `supersedes_result_reference_id`, `superseded_by_result_reference_id` and
+  `is_current` — derived from the correcting version's own reference, so a
+  correction delivered before the version it corrects still links when that
+  version arrives, and one specialty's reference never supersedes another's.
+  Only what a specialty published as finalized is here: a pending candidate is
+  never evidence.
 - `safetyFactsForPatient(patientId, actorId, purpose)` returns the caller's
   purpose-scoped Allergy and Diagnosis Assertions only when the caller holds an
   accepted treatment handoff. Its `diagnoses` key carries **current heads
@@ -107,6 +127,11 @@ Consumers declare `^1.0` and may rely only on documented request/response
 keys. v1 adds fields and operations compatibly; weakening immutability,
 handoff-gated authoring, reasoned Break-Glass, or purpose-scoped reads requires
 a new major version.
+
+**1.5.0** opens `recordDiagnosticResultEvidence` to any registered diagnostic
+specialty, makes a source version's projection idempotent, adds structured
+`source_version`/`supersedes_result_reference_id` lineage, and adds
+`diagnosticResultsForPatient`. A consumer relying on those declares `^1.5`.
 
 **1.1.0** adds the diagnosis lineage additively: `currentDiagnosisHeads`,
 `diagnosisLineageForPatient`, `diagnosisLineageForTakeover`, and

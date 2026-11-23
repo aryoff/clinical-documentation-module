@@ -41,9 +41,6 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
     /** @var list<string> */
     private const ASSERTION_TYPES = ["initial", "supplement", "supersession"];
 
-    /** @var list<string> */
-    private const EVIDENCE_OWNERS = ["laboratory", "radiology"];
-
     public function __construct(
         private readonly CapabilityRegistry $capabilities,
         private readonly DiagnosisAssertionFactPublisher $facts,
@@ -688,52 +685,77 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
     }
 
     /**
-     * A result owner publishes an immutable finding. This is evidence a
-     * clinician may cite; it is never itself a diagnosis, so it creates no
-     * assertion and opens no lineage.
+     * A registered diagnostic specialty publishes the immutable finalized finding of one source version. This is evidence a clinician may
+     * cite; it is never itself a diagnosis, so it creates no assertion, opens no lineage and hands nothing off. A source version is projected
+     * once: a repeat (a lost reply, a retry) returns that projection unchanged. A correction names the source version it supersedes.
      */
     public function recordDiagnosticResultEvidence(
         array $command,
         string $actorId,
     ): array {
-        foreach (
-            [
-                "patient_id",
-                "source_owner",
-                "result_reference_id",
-                "coding_system",
-                "code",
-                "display",
-            ]
-            as $key
-        ) {
-            $this->requiredString($command, $key);
-        }
-        if (!in_array($command["source_owner"], self::EVIDENCE_OWNERS, true)) {
+        $owner = $this->requiredString($command, "source_owner");
+        if (!in_array($owner, $this->registeredSpecialties(), true)) {
             throw new \InvalidArgumentException(
-                "Diagnostic Result Evidence must come from an eligible result owner.",
+                "Diagnostic Result Evidence must come from a registered diagnostic specialty.",
             );
         }
-        if (($command["observed_at"] ?? null) === null) {
-            throw new \InvalidArgumentException(
-                "Diagnostic Result Evidence requires [observed_at].",
-            );
+        $patientId = $this->requiredUuid($command, "patient_id");
+        $reference = $this->requiredUuid($command, "result_reference_id");
+        $registrationId = $this->optionalUuid($command, "registration_id");
+        $supersedes = $this->optionalUuid($command, "supersedes_result_reference_id");
+        if ($supersedes === $reference) {
+            throw new \InvalidArgumentException("A result version cannot supersede itself.");
+        }
+        $version = $command["source_version"] ?? null;
+        if ($version !== null && (!is_int($version) || $version < 1)) {
+            throw new \InvalidArgumentException("Diagnostic Result Evidence [source_version] must be a positive integer.");
+        }
+        foreach (["coding_system" => 64, "code" => 64, "display" => 255] as $key => $max) {
+            if (mb_strlen($this->requiredString($command, $key)) > $max) {
+                throw new \InvalidArgumentException("Diagnostic Result Evidence [{$key}] is too long.");
+            }
+        }
+        if (($command["summary"] ?? null) !== null && !is_string($command["summary"])) {
+            throw new \InvalidArgumentException("Diagnostic Result Evidence [summary] must be text.");
+        }
+        $observedAt = $command["observed_at"] ?? null;
+        if (!is_string($observedAt) || strtotime($observedAt) === false) {
+            throw new \InvalidArgumentException("Diagnostic Result Evidence requires a valid [observed_at].");
+        }
+        // Finalized evidence was observed when it was released: never in the future.
+        if (strtotime($observedAt) > time() + 60) {
+            throw new \InvalidArgumentException("Diagnostic Result Evidence cannot be observed in the future.");
         }
 
-        $evidence = DiagnosticResultEvidence::create([
-            "patient_id" => $command["patient_id"],
-            "registration_id" => $command["registration_id"] ?? null,
-            "source_owner" => $command["source_owner"],
-            "result_reference_id" => $command["result_reference_id"],
-            "coding_system" => $command["coding_system"],
-            "code" => $command["code"],
-            "display" => $command["display"],
-            "summary" => $command["summary"] ?? null,
-            "observed_at" => $command["observed_at"],
-            "released_by" => $actorId,
-            "released_by_name" => $this->actorName($actorId),
-            "recorded_at" => now(),
-        ]);
+        $existing = fn (): ?DiagnosticResultEvidence => DiagnosticResultEvidence::query()
+            ->where("source_owner", $owner)
+            ->where("result_reference_id", $reference)
+            ->first();
+        if (($found = $existing()) !== null) {
+            return $this->evidenceFact($found) + ["recorded" => false];
+        }
+
+        try {
+            $evidence = DiagnosticResultEvidence::create([
+                "patient_id" => $patientId,
+                "registration_id" => $registrationId,
+                "source_owner" => $owner,
+                "result_reference_id" => $reference,
+                "source_version" => $version,
+                "supersedes_result_reference_id" => $supersedes,
+                "coding_system" => $command["coding_system"],
+                "code" => $command["code"],
+                "display" => $command["display"],
+                "summary" => $command["summary"] ?? null,
+                "observed_at" => $observedAt,
+                "released_by" => $actorId,
+                "released_by_name" => $this->actorName($actorId),
+                "recorded_at" => now(),
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            // Another delivery of the same source version won the race: that one is the projection.
+            return $this->evidenceFact($existing() ?? throw new \LogicException("A projected source version vanished.")) + ["recorded" => false];
+        }
         $this->audit(
             "diagnostic_result_evidence_recorded",
             $actorId,
@@ -745,10 +767,67 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
                 "evidence_id" => $evidence->id,
                 "source_owner" => $evidence->source_owner,
                 "result_reference_id" => $evidence->result_reference_id,
+                "supersedes_result_reference_id" => $evidence->supersedes_result_reference_id,
             ],
         );
 
-        return $this->evidenceFact($evidence);
+        return $this->evidenceFact($evidence) + ["recorded" => true];
+    }
+
+    /**
+     * What a treating clinician reads of a patient's finalized diagnostic results: every projected source version with its structured
+     * lineage (which version it supersedes, which later one supersedes it, and whether it is the current one of its chain). Only what a
+     * specialty published as finalized is here, so a pending candidate cannot appear; nothing here is a diagnosis or a handoff.
+     */
+    public function diagnosticResultsForPatient(
+        string $patientId,
+        string $actorId,
+        string $purpose,
+    ): array {
+        $this->assertTreatingAccess($patientId, $actorId);
+        $purpose = $this->requiredPurpose($purpose);
+        $rows = DiagnosticResultEvidence::query()
+            ->where("patient_id", $patientId)
+            ->orderBy("observed_at")
+            ->orderBy("id")
+            ->get();
+        // Corrected by: found through the correcting version's own reference to this one, so delivery order does not matter.
+        $supersededBy = DiagnosticResultEvidence::query()
+            ->whereIn("supersedes_result_reference_id", $rows->pluck("result_reference_id"))
+            ->get(["source_owner", "result_reference_id", "supersedes_result_reference_id"])
+            ->mapWithKeys(fn (DiagnosticResultEvidence $later): array => [$later->source_owner . ":" . $later->supersedes_result_reference_id => $later->result_reference_id]);
+        $results = $rows->map(function (DiagnosticResultEvidence $evidence) use ($supersededBy): array {
+            $by = $supersededBy[$evidence->source_owner . ":" . $evidence->result_reference_id] ?? null;
+
+            return $this->evidenceFact($evidence) + ["superseded_by_result_reference_id" => $by, "is_current" => $by === null];
+        })->all();
+        $this->audit("diagnostic_results_read", $actorId, $patientId, null, null, $purpose);
+
+        return ["patient_id" => $patientId, "purpose" => $purpose, "results" => $results];
+    }
+
+    /** @return list<string> the service kinds of the diagnostic specialties registered in the enabled composition */
+    private function registeredSpecialties(): array
+    {
+        return array_values(array_unique(array_map(
+            static fn (array $registration): string => $registration["key"],
+            $this->capabilities->extensions("diagnostics.specialties"),
+        )));
+    }
+
+    private function requiredUuid(array $command, string $key): string
+    {
+        $value = $this->requiredString($command, $key);
+        if (!\Illuminate\Support\Str::isUuid($value)) {
+            throw new \InvalidArgumentException("Clinical record command [{$key}] must be an identifier.");
+        }
+
+        return $value;
+    }
+
+    private function optionalUuid(array $command, string $key): ?string
+    {
+        return ($command[$key] ?? null) === null ? null : $this->requiredUuid($command, $key);
     }
 
     public function assertAllergy(array $command, string $actorId): array
@@ -1094,7 +1173,11 @@ class ActiveClinicalRecordService implements ActiveClinicalRecordContract
         return [
             "evidence_id" => $evidence->id,
             "source_owner" => $evidence->source_owner,
+            "patient_id" => $evidence->patient_id,
+            "registration_id" => $evidence->registration_id,
             "result_reference_id" => $evidence->result_reference_id,
+            "source_version" => $evidence->source_version,
+            "supersedes_result_reference_id" => $evidence->supersedes_result_reference_id,
             "coding_system" => $evidence->coding_system,
             "code" => $evidence->code,
             "display" => $evidence->display,

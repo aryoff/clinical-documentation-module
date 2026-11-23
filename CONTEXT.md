@@ -29,7 +29,7 @@ A clinically authored, accountable statement of diagnosis linked to supporting c
 The ordered history of immutable Diagnosis Assertions for an active care journey. Each supplemental or superseding assertion preserves the earlier nodes and identifies the current interpretation without rewriting clinical history.
 
 **Diagnostic Result Evidence**:
-An immutable laboratory or radiology result that may support a clinical interpretation. It is evidence for a Diagnosis Assertion, not a diagnosis itself, until an accountable clinician reviews and authors that assertion.
+An immutable finalized result of one source version, from any registered diagnostic specialty (Laboratory and Radiology are two; there is no closed owner list), projected once per source version and carrying its structured predecessor when it corrects one, that may support a clinical interpretation. It is evidence for a Diagnosis Assertion, not a diagnosis itself, until an accountable clinician reviews and authors that assertion.
 
 **Clinical Diagnosis Read**:
 A purpose-scoped read of the complete Diagnosis Assertion Lineage and its linked diagnostic-result evidence, including prior interpretations and the current assertion heads. It permits an authorized clinician to make a decision but does not itself grant authoring authority.

@@ -12,6 +12,7 @@
     "audit.action_label.diagnosis_heads_read": "Diagnosis heads read",
     "audit.action_label.diagnosis_lineage_read": "Diagnosis lineage read",
     "audit.action_label.diagnostic_result_evidence_recorded": "Diagnostic result evidence recorded",
+    "audit.action_label.diagnostic_results_read": "Diagnostic results read",
     "audit.action_label.discharge_summary_drafted": "Discharge summary drafted",
     "audit.action_label.discharge_summary_explained": "Discharge summary explained",
     "audit.action_label.discharge_summary_signed": "Discharge summary signed",

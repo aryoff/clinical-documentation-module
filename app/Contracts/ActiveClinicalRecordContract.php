@@ -117,8 +117,9 @@ interface ActiveClinicalRecordContract
     ): array;
 
     /**
-     * A result owner publishes an immutable finding a clinician may cite. It is
-     * never itself a diagnosis and creates no assertion.
+     * A registered diagnostic specialty publishes the immutable finalized finding of
+     * one source version, once (a repeat returns the same projection). A clinician
+     * may cite it. It is never itself a diagnosis and creates no assertion.
      *
      * @param array<string, mixed> $command
      * @return array<string, mixed>
@@ -126,6 +127,18 @@ interface ActiveClinicalRecordContract
     public function recordDiagnosticResultEvidence(
         array $command,
         string $actorId,
+    ): array;
+
+    /**
+     * A treating clinician's read of a patient's finalized diagnostic results, with each version's structured supersession. Audited; it
+     * grants no clinical document access and makes no diagnosis.
+     *
+     * @return array<string, mixed>
+     */
+    public function diagnosticResultsForPatient(
+        string $patientId,
+        string $actorId,
+        string $purpose,
     ): array;
 
     /** @param array<string, mixed> $command

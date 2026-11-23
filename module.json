@@ -50,7 +50,7 @@
             },
             {
                 "id": "clinicaldocumentation.active-clinical-record",
-                "version": "1.4.0",
+                "version": "1.5.0",
                 "modes": ["sync"],
                 "contracts": {
                     "sync": "contracts/clinicaldocumentation.active-clinical-record/v1/contract.md"
