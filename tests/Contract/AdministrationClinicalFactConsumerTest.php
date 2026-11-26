@@ -18,7 +18,19 @@ class AdministrationClinicalFactConsumerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->requireAdministrationPublisher();
+        if ($this->name() !== 'test_a_published_fact_is_projected_only_where_the_publisher_is_composed') {
+            $this->requireAdministrationPublisher();
+        }
+    }
+
+    /** The one claim that holds in every composition, so this evidence asserts something where the publisher is absent too. */
+    public function test_a_published_fact_is_projected_only_where_the_publisher_is_composed(): void
+    {
+        $composed = app(\App\Support\CapabilityRegistry::class)->isResolved("eprescription.administration-clinical-fact");
+
+        event("eprescription.administration-clinical-fact-published", [$this->administrationFact()]);
+
+        $this->assertDatabaseCount("cd_administration_projections", $composed ? 1 : 0);
     }
 
     public function test_named_fact_is_projected_once_without_a_handoff_and_preserves_the_source_snapshot(): void
