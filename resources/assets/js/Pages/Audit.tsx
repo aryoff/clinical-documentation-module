@@ -1,6 +1,6 @@
 import { Head, Link } from "@inertiajs/react";
 import { type ReactNode } from "react";
-import { ShieldAlert } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShieldAlert } from "lucide-react";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
@@ -8,6 +8,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout/AuthenticatedLayout";
 import Content from "@/Layouts/AuthenticatedLayout/Components/Content";
 import { useModuleT } from "@/hooks/useModuleT";
+
+const renderPaginationLabel = (label: string) => {
+    if (label.includes("&laquo;") || label.includes("«")) {
+        const text = label.replace(/&laquo;|«/g, "").trim();
+        return <span className={"inline-flex items-center gap-1"}><ChevronLeft className={"size-4"} aria-hidden={true} />{text && <span>{text}</span>}</span>;
+    }
+    if (label.includes("&raquo;") || label.includes("»")) {
+        const text = label.replace(/&raquo;|»/g, "").trim();
+        return <span className={"inline-flex items-center gap-1"}>{text && <span>{text}</span>}<ChevronRight className={"size-4"} aria-hidden={true} /></span>;
+    }
+    return label;
+};
 
 // Audit actions this module writes; any other code (written by a collaborating module) is shown as recorded.
 const auditActionCodes = ["active_clinical_record_read", "addendum_created", "addendum_signed", "allergy_asserted", "archive_requested", "break_glass_read", "diagnosis_asserted", "diagnosis_heads_read", "diagnosis_lineage_read", "diagnostic_result_evidence_recorded", "diagnostic_results_read", "document_read", "document_signed", "draft_created", "draft_updated", "handoff_accepted", "safety_facts_read", "discharge_summary_drafted", "discharge_summary_signed", "discharge_summary_explained", "external_evidence_file_read", "external_evidence_incorporated", "external_evidence_reviewed", "external_evidence_staged"];
@@ -89,7 +101,7 @@ const Audit = ({ events }: Pick<AuditProps, "events">) => {
     </Card>
     <div className={"mt-4 flex flex-wrap gap-2"}>
         {events.links.map((link) => link.url
-            ? <Button key={link.label} asChild variant={link.active ? "default" : "outline"} size={"sm"}><Link href={link.url} dangerouslySetInnerHTML={{ __html: link.label }} /></Button>
+            ? <Button key={link.label} asChild variant={link.active ? "default" : "outline"} size={"sm"}><Link href={link.url}>{renderPaginationLabel(link.label)}</Link></Button>
             : null)}
     </div>
 </>;
